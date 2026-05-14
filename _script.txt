@@ -1,873 +1,3 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KBS 보도영상국 파견인력 관리 시스템</title>
-<meta name="description" content="KBS 보도영상국 파견직 인력 현황 및 파견료 정산 관리 시스템">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root{
-  --bg:#f0f2f7;--surface:#ffffff;--surface2:#f4f6fb;--border:#dde2ee;
-  --accent:#4f46e5;--accent2:#e11d7a;--green:#16a34a;--amber:#d97706;
-  --red:#dc2626;--blue:#2563eb;--purple:#7c3aed;
-  --text:#1e2340;--text2:#4a5272;--text3:#7b85a8;
-  --card-bg:#ffffff;--input-bg:#f8f9fd;
-}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Noto Sans KR',sans-serif;font-size:14px;color:var(--text);background:var(--bg);min-height:100vh}
-body::before{content:'';position:fixed;inset:0;background:linear-gradient(135deg,#eef1ff 0%,#f5f7ff 40%,#fdf4ff 100%);z-index:-1;}
-
-/* APP SHELL */
-.app{max-width:1400px;margin:0 auto;padding:0 1.5rem 2rem}
-
-/* HEADER */
-.app-header{
-  display:flex;align-items:center;gap:16px;
-  padding:1.2rem 0;margin-bottom:1.5rem;
-  border-bottom:1px solid var(--border);
-  position:sticky;top:0;z-index:50;
-  background:rgba(240,242,247,.92);backdrop-filter:blur(12px);
-}
-.app-header h1{
-  font-size:17px;font-weight:700;letter-spacing:-.3px;
-  background:linear-gradient(135deg,#4f46e5,#a21caf);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-}
-.app-header .subtitle{font-size:11px;color:var(--text3);margin-left:auto}
-
-/* TABS */
-.tabs{display:flex;gap:4px;margin-bottom:1.5rem;padding:4px;
-  background:rgba(255,255,255,.8);border-radius:14px;width:fit-content;
-  box-shadow:0 2px 8px rgba(79,70,229,.08);border:1px solid var(--border)}
-.tab{padding:8px 20px;font-size:13px;cursor:pointer;border:none;background:none;
-  color:var(--text3);border-radius:10px;font-weight:500;transition:all .2s;font-family:inherit}
-.tab:hover{color:var(--accent);background:rgba(79,70,229,.06)}
-.tab.active{background:var(--accent);color:#fff;font-weight:600;
-  box-shadow:0 4px 14px rgba(79,70,229,.3)}
-
-/* DEPT TABS */
-.dept-tabs{display:flex;gap:8px;margin-bottom:1.2rem;flex-wrap:wrap}
-.dept-tab{padding:6px 16px;font-size:12px;font-weight:500;border-radius:20px;
-  border:1.5px solid var(--border);background:transparent;color:var(--text3);
-  cursor:pointer;transition:all .2s}
-.dept-tab:hover{border-color:var(--accent);color:var(--accent)}
-.dept-tab.active{color:#fff;border-color:transparent;font-weight:600}
-.dept-tab:not([class*='d']).active{background:var(--accent)}
-.dept-tab.d1.active{background:linear-gradient(135deg,#6c63ff,#4f46e5)}
-.dept-tab.d2.active{background:linear-gradient(135deg,#a855f7,#7c3aed)}
-.dept-tab.d3.active{background:linear-gradient(135deg,#3b82f6,#2563eb)}
-
-/* SUMMARY CARDS */
-.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:1.5rem}
-.scard{background:#fff;border-radius:14px;padding:16px 18px;
-  border:1px solid var(--border);transition:all .2s;
-  box-shadow:0 2px 8px rgba(79,70,229,.06)}
-.scard:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(79,70,229,.12)}
-.scard .lbl{font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:500}
-.scard .val{font-size:26px;font-weight:700}
-.val-blue{color:var(--blue)}.val-green{color:var(--green)}
-.val-amber{color:var(--amber)}.val-purple{color:var(--purple)}
-
-/* SEC HEADER */
-.sec-header{display:flex;justify-content:space-between;align-items:center;
-  margin-bottom:1rem;flex-wrap:wrap;gap:8px}
-.sec-header h2{font-size:15px;font-weight:600;color:var(--text)}
-.header-btns{display:flex;gap:8px;flex-wrap:wrap}
-
-/* BUTTONS */
-.btn{padding:8px 14px;font-size:12px;border-radius:9px;cursor:pointer;
-  font-weight:500;border:none;font-family:inherit;transition:all .15s}
-.btn-primary{background:var(--accent);color:#fff}
-.btn-primary:hover{background:#5a52e0;box-shadow:0 4px 14px rgba(108,99,255,.4)}
-.btn-export{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.25)}
-.btn-export:hover{background:rgba(34,197,94,.2)}
-.btn-import{background:rgba(59,130,246,.12);color:var(--blue);border:1px solid rgba(59,130,246,.25)}
-.btn-import:hover{background:rgba(59,130,246,.2)}
-.btn-template{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
-.btn-template:hover{background:var(--surface)}
-.btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border)}
-.btn-outline:hover{background:var(--surface2)}
-.btn-danger{background:transparent;color:var(--red);border:1px solid rgba(239,68,68,.3)}
-.btn-danger:hover{background:rgba(239,68,68,.1)}
-.btn-cancel{background:none;color:var(--text2);border:1px solid var(--border);
-  padding:9px 20px;font-size:13px;border-radius:9px;cursor:pointer;font-family:inherit}
-.btn-save{background:var(--accent);color:#fff;border:none;
-  padding:9px 24px;font-size:13px;border-radius:9px;cursor:pointer;font-weight:600;font-family:inherit}
-.btn-save:hover{background:#5a52e0}
-
-/* FILTER ROW */
-.filter-row{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
-.filter-row select,.filter-row input{
-  padding:7px 11px;border:1px solid var(--border);border-radius:9px;
-  font-size:12px;background:var(--input-bg);color:var(--text);height:36px;font-family:inherit}
-.filter-row input[type=text]{width:150px}
-.filter-row input:focus,.filter-row select:focus{outline:none;border-color:var(--accent)}
-
-/* TABLE */
-.tbl-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--border);background:#fff;
-  box-shadow:0 2px 12px rgba(79,70,229,.06)}
-table{width:100%;border-collapse:collapse;font-size:12px;min-width:1160px}
-th{text-align:left;padding:10px 12px;font-weight:600;font-size:11px;color:var(--text3);
-  border-bottom:1px solid var(--border);white-space:nowrap;background:#f8f9fd;
-  text-transform:uppercase;letter-spacing:.3px}
-td{padding:10px 12px;border-bottom:1px solid #eef0f7;vertical-align:middle;white-space:nowrap;color:var(--text)}
-tr:last-child td{border-bottom:none}
-tr:hover td{background:#f5f6ff}
-
-/* BADGES */
-.badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:500}
-.b-ing{background:rgba(59,130,246,.15);color:var(--blue)}
-.b-end{background:rgba(239,68,68,.15);color:var(--red)}
-.b-soon{background:rgba(245,158,11,.15);color:var(--amber)}
-.b-ga{background:rgba(59,130,246,.15);color:var(--blue)}
-.b-na{background:rgba(245,158,11,.15);color:var(--amber)}
-.b-daily{background:rgba(168,85,247,.15);color:var(--purple)}
-.b-special{background:rgba(245,158,11,.15);color:var(--amber)}
-.b-sports{background:rgba(34,197,94,.15);color:var(--green)}
-.b-ingest{background:rgba(59,130,246,.15);color:var(--blue)}
-.note-badge{font-size:10px;padding:1px 6px;border-radius:3px;
-  background:rgba(245,158,11,.15);color:var(--amber);margin-left:4px}
-
-/* PAGINATION */
-.pagination{display:flex;align-items:center;gap:8px;margin-top:1rem;
-  justify-content:flex-end;font-size:12px;color:var(--text3)}
-.pg-btn{padding:5px 12px;border:1px solid var(--border);border-radius:7px;
-  cursor:pointer;background:var(--surface2);color:var(--text2);font-size:12px}
-.pg-btn:disabled{opacity:.3;cursor:not-allowed}
-
-/* MODAL */
-.modal-bg{position:fixed;inset:0;background:rgba(79,70,229,.15);display:flex;
-  align-items:flex-start;justify-content:center;padding-top:40px;z-index:100;overflow-y:auto;
-  backdrop-filter:blur(8px)}
-.modal{background:#fff;border-radius:18px;border:1px solid var(--border);
-  padding:1.75rem;width:100%;max-width:580px;margin-bottom:40px;
-  box-shadow:0 24px 64px rgba(79,70,229,.18)}
-.modal h3{font-size:17px;font-weight:700;margin-bottom:1.2rem;color:var(--text)}
-.modal-footer{display:flex;gap:8px;justify-content:flex-end;
-  margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--border)}
-
-/* FORM */
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
-.form-grid.three{grid-template-columns:1fr 1fr 1fr}
-.fg{display:flex;flex-direction:column;gap:5px}
-.fg label{font-size:11px;color:var(--text2);font-weight:600}
-.fg input,.fg select,.fg textarea{
-  padding:9px 11px;border:1.5px solid var(--border);border-radius:9px;
-  font-size:13px;background:#fff;color:var(--text);width:100%;font-family:inherit}
-.fg input:focus,.fg select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
-.fg.full{grid-column:1/-1}
-.sec-div{font-size:11px;font-weight:600;color:var(--text3);padding-bottom:5px;
-  border-bottom:1px solid var(--border);grid-column:1/-1;margin-top:6px;
-  text-transform:uppercase;letter-spacing:.5px}
-
-/* SUBTYPE */
-.subtype-box{background:var(--surface2);border-radius:9px;padding:10px 14px;
-  border:1px solid var(--border);grid-column:1/-1;display:none}
-.subtype-box.show{display:block}
-.sb-label{font-size:11px;color:var(--text3);font-weight:500;margin-bottom:8px}
-.subtype-btns{display:flex;gap:8px}
-.st-btn{padding:6px 18px;font-size:12px;border:1px solid var(--border);border-radius:8px;
-  cursor:pointer;background:var(--input-bg);color:var(--text3);transition:all .1s;font-family:inherit}
-.st-btn.sel-daily{background:rgba(168,85,247,.2);color:var(--purple);border-color:var(--purple);font-weight:500}
-.st-btn.sel-special{background:rgba(245,158,11,.2);color:var(--amber);border-color:var(--amber);font-weight:500}
-.st-btn.sel-sports{background:rgba(34,197,94,.2);color:var(--green);border-color:var(--green);font-weight:500}
-
-/* UPLOAD ZONE */
-.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:16px;
-  margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer;
-  background:var(--input-bg);transition:all .15s}
-.upload-zone:hover{border-color:var(--accent);background:rgba(108,99,255,.08)}
-.upload-zone.dragging{border-color:var(--accent);background:rgba(108,99,255,.1)}
-.u-icon{width:40px;height:40px;border-radius:9px;background:rgba(108,99,255,.15);
-  display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.u-title{font-size:13px;font-weight:500;color:var(--text)}
-.u-sub{font-size:11px;color:var(--text3);margin-top:2px}
-.method-tabs{display:flex;gap:6px;margin-bottom:12px}
-.m-tab{padding:5px 14px;font-size:12px;border:1px solid var(--border);border-radius:7px;
-  cursor:pointer;background:var(--surface2);color:var(--text3);font-family:inherit}
-.m-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-.paste-area{width:100%;height:90px;padding:9px 11px;border:1px solid var(--border);
-  border-radius:9px;font-size:12px;resize:vertical;font-family:inherit;
-  color:var(--text);background:var(--input-bg)}
-.btn-parse-text{margin-top:8px;padding:8px 18px;background:var(--blue);color:#fff;
-  border:none;border-radius:9px;font-size:12px;cursor:pointer;font-weight:500;font-family:inherit}
-
-/* AI STATUS */
-.ai-status{display:none;align-items:center;gap:8px;font-size:12px;
-  padding:9px 12px;border-radius:9px;margin-bottom:10px}
-.ai-status.show{display:flex}
-.ai-status.loading{background:rgba(59,130,246,.12);color:var(--blue)}
-.ai-status.done{background:rgba(34,197,94,.12);color:var(--green)}
-.ai-status.err{background:rgba(239,68,68,.12);color:var(--red)}
-.spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.15);
-  border-top:2px solid var(--blue);border-radius:50%;
-  animation:spin .8s linear infinite;flex-shrink:0}
-@keyframes spin{to{transform:rotate(360deg)}}
-.filled-badge{display:inline-block;padding:1px 5px;background:rgba(34,197,94,.15);
-  color:var(--green);border-radius:3px;font-size:10px;margin-left:4px;vertical-align:middle}
-
-/* AI RESULT */
-.ai-result{display:none;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);
-  border-radius:9px;padding:12px;margin-bottom:12px}
-.ai-result.show{display:block}
-.ai-result-title{font-size:11px;font-weight:600;color:var(--green);margin-bottom:8px}
-.ai-result-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 16px}
-.ai-result-row{font-size:12px;display:flex;gap:6px}
-.ai-result-key{color:var(--text3);min-width:54px;flex-shrink:0}
-.ai-result-val{color:var(--text);font-weight:500}
-
-/* AGENCY GRID */
-.agency-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:1rem}
-.agency-card{background:var(--card-bg);border:1px solid var(--border);border-radius:14px;
-  padding:18px 20px;transition:all .2s}
-.agency-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.3);transform:translateY(-2px)}
-.agency-name{font-size:15px;font-weight:700;color:var(--text)}
-.agency-info{font-size:12px;color:var(--text3);margin-top:3px}
-.agency-status{font-size:11px;padding:3px 10px;border-radius:5px;
-  background:var(--surface2);color:var(--text3)}
-.agency-status.on{background:rgba(34,197,94,.15);color:var(--green)}
-
-/* HISTORY */
-.hist-item{padding:12px 0;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start}
-.hist-item:last-child{border-bottom:none}
-.hdot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
-.hdot.new{background:var(--blue)}.hdot.replace{background:var(--amber)}
-.hist-date{font-size:11px;color:var(--text3);margin-top:2px}
-
-/* EXCEL IMPORT */
-.excel-drop{border:2px dashed rgba(34,197,94,.3);border-radius:12px;padding:24px;
-  text-align:center;background:rgba(34,197,94,.05);cursor:pointer;margin-bottom:1rem}
-.excel-drop:hover{border-color:var(--green);background:rgba(34,197,94,.08)}
-.col-map{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:240px;overflow-y:auto;margin-bottom:1rem}
-.col-row{display:flex;flex-direction:column;gap:4px}
-.col-row label{font-size:11px;color:var(--text3)}
-.col-row select{padding:5px 8px;border:1px solid var(--border);border-radius:7px;
-  font-size:12px;background:var(--input-bg);color:var(--text)}
-.import-info{font-size:12px;padding:9px 12px;background:var(--surface2);
-  border-radius:9px;margin-bottom:12px;color:var(--text2)}
-
-/* EMPTY */
-.empty{text-align:center;padding:3rem;color:var(--text3);font-size:13px}
-
-/* FORMAT BADGES */
-.fmt-kbs{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.2)}
-.fmt-mi{background:rgba(59,130,246,.15);color:var(--blue);border:1px solid rgba(59,130,246,.2)}
-.fmt-primus{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.2)}
-.fmt-etc{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
-.fmt-badge{padding:3px 8px;border-radius:4px;font-size:10px;font-weight:500}
-
-/* PAGE SWITCH */
-.page{display:none}.page.active{display:block;animation:fadeIn .2s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-
-/* WAGE TABLE */
-#wage-panel{background:#fff;border:1px solid var(--border);border-radius:14px;
-  padding:1.25rem;margin-bottom:1.2rem;box-shadow:0 2px 8px rgba(79,70,229,.06)}
-#wage-panel input{background:#f8f9fd;color:var(--text);border:1px solid var(--border);
-  border-radius:7px;padding:5px 8px;font-size:13px}
-
-/* DAY EDIT OVERLAY */
-#day-edit-overlay{background:rgba(79,70,229,.12);backdrop-filter:blur(10px)}
-#day-edit-overlay > div{background:#fff;border:1px solid var(--border);border-radius:18px;
-  box-shadow:0 24px 64px rgba(79,70,229,.18)}
-#dem-start,#dem-end{background:#f8f9fd!important;color:var(--text)!important;
-  border:2px solid var(--border)!important;border-radius:10px!important}
-
-/* SCROLLBAR */
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:#eef0f7}
-::-webkit-scrollbar-thumb{background:#c5cae0;border-radius:3px}
-
-/* SELECT & INPUT GLOBAL */
-select,input,textarea{color-scheme:light}
-
-
-/* ══════════════════════════════════
-   파견료 정산 탭 — 라이트 테마 보정
-   원본 JS의 흰 배경/연한 색상 인라인 스타일을
-   라이트 테마에 맞게 보정
-   ══════════════════════════════════ */
-
-/* 요약 카드 */
-#pay-content > div[style*="background:#f5f5f3"] { background:#f4f6fb!important; }
-#pay-content > div[style*="background:#FFF3E8"] { background:#fffbf0!important; border:1px solid #fde68a!important; }
-#pay-content > div[style*="background:#E6F1FB"] { background:#eff6ff!important; border:1px solid #bfdbfe!important; }
-
-/* 정산 목록 테이블 */
-#pay-content table { background:#fff; }
-#pay-content thead tr { background:#f8f9fd!important; }
-#pay-content thead th { color:#7b85a8!important; border-bottom:1px solid #dde2ee!important; }
-#pay-content tbody tr:hover td { background:#f5f6ff!important; }
-#pay-content tbody td { color:#1e2340!important; border-bottom:1px solid #eef0f7!important; }
-
-/* 성명 컬럼 */
-#pay-content td[style*="font-weight:500"] { color:#1e2340!important; font-weight:600!important; }
-
-/* 기본급 숫자 */
-#pay-content td[style*="text-align:right"][style*="color:#888"] { color:#4a5272!important; font-weight:500!important; }
-
-/* 시간외수당 — 주황 */
-#pay-content td[style*="color:#854F0B"] { color:#b45309!important; font-weight:600!important; }
-#pay-content td[style*="color:#ccc"] { color:#c5cae0!important; }
-
-/* 총 파견료 — 파랑 */
-#pay-content td[style*="color:#185FA5"] { color:#1d4ed8!important; font-weight:700!important; }
-
-/* 직군 배지 */
-#pay-content span[style*="background:#E6F1FB"] { background:#dbeafe!important; color:#1d4ed8!important; }
-#pay-content span[style*="background:#EEEDFE"] { background:#ede9fe!important; color:#5b21b6!important; }
-#pay-content span[style*="background:#FAEEDA"] { background:#fef3c7!important; color:#92400e!important; }
-#pay-content span[style*="background:#FCEBEB"] { background:#fee2e2!important; color:#991b1b!important; }
-
-/* 버튼 */
-#pay-content span[style*="background:#f5f5f3"] { background:#f4f6fb!important; color:#4a5272!important; }
-#pay-content span[style*="background:#1a1a1a"] { background:#1e2340!important; color:#fff!important; }
-#pay-content button[style*="border:1.5px solid #F7C1C1"] { border-color:#fca5a5!important; color:#dc2626!important; }
-#pay-content button[style*="background:#A32D2D"] { background:#dc2626!important; border-color:#dc2626!important; }
-#pay-content td[style*="color:#888"][style*="font-size:12px"] { color:#7b85a8!important; }
-
-/* ══ 일별 상세 뷰 ══ */
-#pay-detail-inner { color:#1e2340; }
-#pay-detail-inner button[style*="background:#f5f5f3"] { background:#f4f6fb!important; color:#4a5272!important; border:1px solid #dde2ee!important; }
-#pay-detail-inner > div[style*="background:#fff"] { background:#fff!important; border-color:#dde2ee!important; box-shadow:0 2px 12px rgba(79,70,229,.06)!important; }
-#pay-detail-inner [style*="background:#f8f8f6"] { background:#f4f6fb!important; }
-#pay-detail-inner [style*="background:#FFF3E8"] { background:#fffbf0!important; }
-#pay-detail-inner [style*="background:#E6F1FB"] { background:#eff6ff!important; border-color:#bfdbfe!important; }
-
-/* 합계 카드 텍스트 */
-#pay-detail-inner [style*="color:#555"] { color:#4a5272!important; }
-#pay-detail-inner [style*="color:#185FA5"] { color:#1d4ed8!important; }
-#pay-detail-inner [style*="color:#854F0B"] { color:#b45309!important; }
-#pay-detail-inner [style*="color:#333"] { color:#1e2340!important; }
-#pay-detail-inner [style*="color:#aaa"] { color:#a0abc8!important; }
-#pay-detail-inner [style*="color:#888"] { color:#7b85a8!important; }
-
-/* 날짜 테이블 */
-#pay-detail-inner table { background:#fff; }
-#pay-detail-inner td { border-color:#eef0f7!important; }
-#pay-detail-inner tr[style*="background:#fff"] { background:#fff!important; }
-#pay-detail-inner tr[style*="background:#F8F0FF"] { background:#faf5ff!important; }
-#pay-detail-inner tr[style*="background:#FFF8F0"] { background:#fffbf0!important; }
-#pay-detail-inner tr[style*="background:#F0F9FF"] { background:#f0f9ff!important; }
-#pay-detail-inner tr[style*="background:#f0f0ec"] { background:#f4f6fb!important; }
-
-/* 요일 배지 */
-#pay-detail-inner span[style*="background:#FCEBEB"] { background:#fee2e2!important; }
-#pay-detail-inner span[style*="background:#E6F1FB"] { background:#dbeafe!important; }
-#pay-detail-inner span[style*="background:#f0f0ec"] { background:#eef0f7!important; }
-
-/* 시간 인풋 */
-#pay-detail-inner input[type="text"][id^="inp-"] {
-  background:#f8f9fd!important; color:#1e2340!important;
-  border-color:#dde2ee!important;
-}
-#pay-detail-inner input[type="text"][style*="background:#EBF4FF"] {
-  background:#dbeafe!important; color:#1d4ed8!important; border-color:#3b82f6!important;
-}
-
-/* 색상 텍스트 */
-#pay-detail-inner [style*="color:#bbb"] { color:#a0abc8!important; }
-#pay-detail-inner [style*="color:#ddd"] { color:#c5cae0!important; }
-#pay-detail-inner [style*="color:#ccc"] { color:#c5cae0!important; }
-#pay-detail-inner [style*="color:#e0e0e0"] { color:#dde2ee!important; }
-
-/* 합계 행 */
-#pay-detail-inner tr[style*="background:#f0f0ec"] td { background:#f4f6fb!important; color:#1e2340!important; }
-
-/* 버튼들 */
-#pay-detail-inner button[style*="background:#f0f0ec"] { background:#f4f6fb!important; color:#4a5272!important; border:1px solid #dde2ee!important; }
-#pay-detail-inner button[style*="background:#1a1a1a"] { background:#1e2340!important; color:#fff!important; }
-
-/* 시간외 배지 */
-#pay-detail-inner [style*="background:#E6F1FB"][style*="color:#185FA5"] { background:#dbeafe!important; color:#1d4ed8!important; }
-#pay-detail-inner [style*="background:#EEEDFE"][style*="color:#534AB7"] { background:#ede9fe!important; color:#5b21b6!important; }
-#pay-detail-inner [style*="background:#1a1a2e"] { background:#1e1b4b!important; }
-#pay-detail-inner [style*="background:#FCEBEB"][style*="color:#A32D2D"] { background:#fee2e2!important; color:#991b1b!important; }
-#pay-detail-inner input#ds-absent-inp { background:#f8f9fd!important; color:#b45309!important; }
-#pay-detail-inner button[style*="background:#FFF0F0"] { background:#fef2f2!important; color:#dc2626!important; border-color:#fca5a5!important; }
-
-/* ══ 통계(rank) 탭 ══ */
-#rank-summary .scard { background:#fff!important; border-color:#dde2ee!important; }
-#rank-content table { background:#fff; }
-#rank-content thead tr { background:#f8f9fd!important; }
-#rank-content thead th { color:#7b85a8!important; border-color:#dde2ee!important; }
-#rank-content tbody tr { border-color:#eef0f7!important; }
-#rank-content tbody td { color:#1e2340!important; border-color:#eef0f7!important; }
-#rank-content [style*="background:#FFFDE7"] { background:#fefce8!important; }
-#rank-content [style*="background:#F1F8E9"] { background:#f0fdf4!important; }
-#rank-content [style*="background:#FFF3E8"] { background:#fffbf0!important; }
-#rank-content [style*="background:#EBF4FF"] { background:#eff6ff!important; }
-#rank-content [style*="background:#FCEBEB"] { background:#fee2e2!important; color:#991b1b!important; }
-#rank-content [style*="background:#eee"] { background:#eef0f7!important; }
-#rank-content [style*="background:#b0c8e8"] { background:#bfdbfe!important; }
-#rank-content [style*="background:#185FA5"] { background:#2563eb!important; }
-</style>
-
-</head>
-<body>
-<div class="app">
-  <div class="app-header">
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#6c63ff,#ff6584);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🎬</div>
-      <div>
-        <h1>KBS 보도영상국 파견인력 관리 시스템</h1>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px">뉴스영상콘텐츠부 · 인제스트 &amp; 촬영보조</div>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
-      <span id="sync-indicator" style="display:none;align-items:center;gap:5px;font-size:11px;color:var(--green);background:rgba(34,197,94,.1);padding:4px 10px;border-radius:20px;border:1px solid rgba(34,197,94,.2)">
-        <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite"></span>자동동기화
-      </span>
-      <span id="save-status" style="font-size:11px;color:var(--text3)"></span>
-      <button onclick="openDataMgr()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;font-size:12px;cursor:pointer;color:var(--text2);font-weight:500;font-family:inherit">💾 데이터 관리</button>
-    </div>
-  </div>
-
-  <div class="tabs">
-    <button class="tab active" onclick="showPage('list')">직원 현황</button>
-    <button class="tab" onclick="showPage('history')">교체 이력</button>
-    <button class="tab" onclick="showPage('agency')">파견업체</button>
-    <button class="tab" onclick="showPage('pay')">파견료 정산</button>
-    <button class="tab" onclick="showPage('rank')">📊 통계</button>
-  </div>
-<div id="page-list" class="page active">
-    <div class="summary" id="summary"></div>
-    <!-- 부서 탭 -->
-    <div class="dept-tabs" id="dept-tabs">
-      <button class="dept-tab active" onclick="setDeptTab('')">전체</button>
-      <button class="dept-tab d1" onclick="setDeptTab('영상취재1부')">📹 영상취재1부</button>
-      <button class="dept-tab d2" onclick="setDeptTab('영상취재2부')">📹 영상취재2부</button>
-      <button class="dept-tab d3" onclick="setDeptTab('뉴스영상콘텐츠부')">🎬 뉴스영상콘텐츠부</button>
-    </div>
-    <div class="sec-header">
-      <h2>파견직 인력 현황 <span id="total-cnt" style="font-size:13px;font-weight:400;color:#888"></span></h2>
-      <div class="header-btns">
-        <button class="btn btn-template" onclick="downloadTemplate()">📋 양식 다운로드</button>
-        <button class="btn btn-import" onclick="openImport()">📥 엑셀 가져오기</button>
-        <button class="btn btn-export" onclick="exportExcel()">📤 엑셀 내보내기</button>
-        <button class="btn btn-primary" onclick="openModal('add')">+ 신규 등록</button>
-      </div>
-    </div>
-    <div class="filter-row">
-      <input type="text" id="filter-search" placeholder="🔍 이름 검색" oninput="renderTable()">
-      <select id="filter-type" onchange="onFilterType()">
-        <option value="">전체 직군</option>
-        <option value="촬영보조">촬영보조</option>
-        <option value="인제스트">인제스트</option>
-      </select>
-      <select id="filter-sub" onchange="renderTable()" style="display:none">
-        <option value="">전체 세부구분</option>
-        <option value="데일리">데일리</option>
-        <option value="특집">특집</option>
-        <option value="스포츠">스포츠</option>
-      </select>
-      <select id="filter-grade" onchange="renderTable()">
-        <option value="">전체 등급</option>
-        <option value="가">가 등급</option>
-        <option value="나">나 등급</option>
-      </select>
-      <select id="filter-agency" onchange="renderTable()"><option value="">전체 파견업체</option></select>
-      <select id="filter-status" onchange="renderTable()">
-        <option value="">전체 상태</option>
-        <option value="근무중">근무중</option>
-        <option value="계약종료">계약종료</option>
-      </select>
-    </div>
-    <div class="tbl-wrap" id="table-wrap"></div>
-    <div class="pagination" id="pagination"></div>
-  </div>
-
-  <!-- 교체이력 -->
-  <div id="page-history" class="page">
-    <div class="sec-header"><h2>교체 이력</h2></div>
-    <div id="history-list" style="background:#fff;border:1px solid #eee;border-radius:10px;padding:1rem"></div>
-  </div>
-
-
-  <!-- 통계 탭 -->
-  <div id="page-rank" class="page">
-    <div class="sec-header">
-      <h2>📊 월별 시간외 근무 순위</h2>
-    </div>
-    <div style="display:flex;gap:10px;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap">
-      <select id="rank-year" onchange="renderRank()" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a"></select>
-      <select id="rank-month" onchange="renderRank()" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a"></select>
-      <select id="rank-type" onchange="renderRank()" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a">
-        <option value="">전체 직군</option>
-        <option value="촬영보조">촬영보조</option>
-        <option value="인제스트">인제스트</option>
-      </select>
-      <select id="rank-dept" onchange="renderRank()" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a">
-        <option value="">전체 부서</option>
-        <option value="영상취재1부">영상취재1부</option>
-        <option value="영상취재2부">영상취재2부</option>
-        <option value="뉴스영상콘텐츠부">뉴스영상콘텐츠부</option>
-      </select>
-    </div>
-    <div id="rank-summary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.4rem"></div>
-    <div id="rank-content"></div>
-  </div>
-
-  <!-- 파견료 정산 -->
-  <div id="page-pay" class="page">
-
-    <!-- 목록 뷰 -->
-    <div id="pay-list-view">
-      <!-- 상단 컨트롤 -->
-      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:1.2rem">
-        <div style="display:flex;flex-direction:column;gap:5px">
-          <label style="font-size:11px;color:#888;font-weight:500">연도</label>
-          <select id="pay-year" onchange="renderPayList()" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a">
-            <option value="2024">2024년</option><option value="2025">2025년</option><option value="2026" selected>2026년</option>
-          </select>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:5px">
-          <label style="font-size:11px;color:#888;font-weight:500">월</label>
-          <select id="pay-month" onchange="renderPayList()" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a"></select>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:5px">
-          <label style="font-size:11px;color:#888;font-weight:500">직군</label>
-          <select id="pay-filter" onchange="renderPayList()" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a">
-            <option value="">전체</option><option value="인제스트">인제스트</option><option value="촬영보조">촬영보조</option>
-          </select>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:5px">
-          <label style="font-size:11px;color:#888;font-weight:500">부서</label>
-          <select id="pay-dept" onchange="renderPayList()" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a">
-            <option value="">전체</option>
-            <option value="영상취재1부">영상취재1부</option>
-            <option value="영상취재2부">영상취재2부</option>
-            <option value="뉴스영상콘텐츠부">뉴스영상콘텐츠부</option>
-          </select>
-        </div>
-        <button onclick="openWageSetting()" style="padding:8px 16px;background:none;border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer;color:#666;height:38px">임금 설정</button>
-        <div style="display:flex;gap:6px">
-          <input type="file" id="att-excel-input" accept=".xlsx,.xls" style="display:none" onchange="importAttendance(this)">
-          <button onclick="document.getElementById('att-excel-input').click()"
-            style="padding:8px 14px;background:#E1F5EE;color:#0F6E56;border:1px solid #9FE1CB;border-radius:8px;font-size:12px;cursor:pointer;font-weight:500;height:38px">
-            📊 엑셀 업로드
-          </button>
-          <input type="file" id="att-pdf-input" accept=".pdf" multiple style="display:none" onchange="importAttendancePDF(this)">
-          <button onclick="document.getElementById('att-pdf-input').click()"
-            style="padding:8px 14px;background:#EEEDFE;color:#534AB7;border:1px solid #AFA9EC;border-radius:8px;font-size:12px;cursor:pointer;font-weight:500;height:38px">
-            📄 PDF 업로드 (다중)
-          </button>
-        </div>
-        <button onclick="openInvoiceModal()"
-          style="padding:8px 16px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-weight:500;height:38px">
-          🖨 청구내역서 출력
-        </button>
-        <div id="att-result" style="display:none;padding:7px 14px;border-radius:8px;font-size:12px;align-items:center;gap:8px"></div>
-        <div id="pdf-debug-box" style="display:none;margin-top:10px;background:#1a1a2e;border-radius:10px;padding:14px;border:1px solid #334">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <span style="color:#8aadde;font-size:11px;font-weight:600">📄 PDF 추출 텍스트 확인 (날짜·시간 형식 확인용)</span>
-            <button onclick="document.getElementById('pdf-debug-box').style.display='none'" style="background:none;border:none;color:#666;cursor:pointer;font-size:16px">✕</button>
-          </div>
-          <pre id="pdf-debug-pre" style="color:#b0d4ff;font-size:10.5px;line-height:1.7;white-space:pre-wrap;max-height:220px;overflow-y:auto;margin:0;font-family:monospace"></pre>
-        </div>
-      </div>
-
-      <!-- 임금 설정 패널 -->
-      <div id="wage-panel" style="display:none;background:#fff;border:1px solid #eee;border-radius:12px;padding:1.25rem;margin-bottom:1.2rem">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-          <span style="font-size:13px;font-weight:500">연도별 임금 설정</span>
-          <div style="display:flex;gap:8px">
-            <button onclick="autoCalcHourly()" style="padding:6px 12px;background:none;border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer;color:#666">시급 자동계산 (÷208h)</button>
-            <button onclick="saveWageSetting()" style="padding:6px 16px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-weight:500">저장</button>
-            <button onclick="document.getElementById('wage-panel').style.display='none'" style="padding:6px 12px;background:none;border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer;color:#666">닫기</button>
-          </div>
-        </div>
-        <table style="width:100%;border-collapse:collapse;font-size:13px" id="wage-table">
-          <thead><tr style="background:#fafaf8">
-            <th style="text-align:left;padding:8px 10px;font-size:11px;color:#888;border-bottom:1px solid #eee;font-weight:500">직군</th>
-            <th style="text-align:left;padding:8px 10px;font-size:11px;color:#888;border-bottom:1px solid #eee;font-weight:500">기본급 (원/월)</th>
-            <th style="text-align:left;padding:8px 10px;font-size:11px;color:#888;border-bottom:1px solid #eee;font-weight:500">시급 (원)</th>
-          </tr></thead>
-          <tbody id="wage-tbody"></tbody>
-        </table>
-        <!-- 간접비율 설정 -->
-        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #f0f0ec;display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div>
-            <label style="font-size:11px;color:#888;font-weight:500;display:block;margin-bottom:5px">시간외수당 간접비율 (%)</label>
-            <div style="display:flex;align-items:center;gap:6px">
-              <input type="number" id="rate-indirect" value="11.7264" min="0" max="30" step="0.1"
-                style="width:80px;padding:6px 8px;border:1px solid #ddd;border-radius:7px;font-size:13px">
-              <span style="font-size:11px;color:#aaa">% 적용</span>
-            </div>
-          </div>
-          <div>
-            <label style="font-size:11px;color:#888;font-weight:500;display:block;margin-bottom:5px">퇴직급여충당금률 (%)</label>
-            <div style="display:flex;align-items:center;gap:6px">
-              <input type="number" id="rate-retirement" value="8.33" min="0" max="20" step="0.01"
-                style="width:80px;padding:6px 8px;border:1px solid #ddd;border-radius:7px;font-size:13px">
-              <span style="font-size:11px;color:#aaa">% (시간외수당 × 1/12)</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div id="pay-content"></div>
-    </div>
-
-    <!-- 개인 상세 뷰 (전체 화면 전환) -->
-    <div id="pay-detail-view" style="display:none">
-      <div id="pay-detail-inner"></div>
-    </div>
-
-    <!-- 일별 수정 모달 -->
-    <div id="day-edit-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center">
-      <div style="background:#fff;border-radius:16px;padding:1.75rem;width:100%;max-width:400px;margin:1rem;box-shadow:0 8px 40px rgba(0,0,0,0.18)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
-          <div>
-            <div style="font-size:17px;font-weight:700" id="dem-date"></div>
-            <div style="font-size:12px;color:#888;margin-top:2px" id="dem-worker"></div>
-          </div>
-          <button onclick="closeDayEditModal()"
-            style="width:30px;height:30px;border-radius:50%;border:1px solid #eee;background:#f5f5f3;cursor:pointer;font-size:16px;color:#888;display:flex;align-items:center;justify-content:center">✕</button>
-        </div>
-
-        <!-- 출퇴근 시간 입력 -->
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.25rem">
-          <div style="flex:1">
-            <label style="font-size:11px;color:#888;font-weight:500;display:block;margin-bottom:5px">출근 시간</label>
-            <input type="text" id="dem-start" placeholder="09:00" maxlength="5"
-              style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:20px;text-align:center;letter-spacing:3px;font-weight:600"
-              oninput="autoFmtTime(this);previewDayOT()" onfocus="this.select()">
-          </div>
-          <div style="color:#ccc;font-size:24px;margin-top:16px">→</div>
-          <div style="flex:1">
-            <label style="font-size:11px;color:#888;font-weight:500;display:block;margin-bottom:5px">퇴근 시간</label>
-            <input type="text" id="dem-end" placeholder="18:00" maxlength="5"
-              style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:20px;text-align:center;letter-spacing:3px;font-weight:600"
-              oninput="autoFmtTime(this);previewDayOT()" onfocus="this.select()">
-          </div>
-        </div>
-
-        <!-- 익일/휴일 체크 -->
-        <div style="display:flex;gap:10px;margin-bottom:1.25rem">
-          <div style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:#EEEDFE;border-radius:10px;border:1px solid #AFA9EC">
-            <input type="checkbox" id="dem-nextday" style="width:16px;height:16px;accent-color:#534AB7;cursor:pointer"
-              onchange="previewDayOT()">
-            <label for="dem-nextday" style="font-size:13px;font-weight:500;cursor:pointer;color:#534AB7">익일 퇴근</label>
-            <span style="font-size:10px;color:#888;margin-left:auto">20:00~09:00 등</span>
-          </div>
-          <div style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:#f8f8f6;border-radius:10px">
-            <input type="checkbox" id="dem-holiday" style="width:16px;height:16px;accent-color:#854F0B;cursor:pointer"
-              onchange="previewDayOT()">
-            <label for="dem-holiday" style="font-size:13px;font-weight:500;cursor:pointer;color:#555">공휴일 / 특근일</label>
-          </div>
-        </div>
-
-        <!-- 실시간 계산 미리보기 -->
-        <div id="dem-preview" style="background:#f5f5f3;border-radius:10px;padding:12px 14px;margin-bottom:1.25rem;min-height:54px">
-          <div style="font-size:11px;color:#aaa;text-align:center">시간 입력 시 자동 계산됩니다</div>
-        </div>
-
-        <!-- 버튼 -->
-        <div style="display:flex;gap:8px">
-          <button onclick="clearDayEditModal()"
-            style="padding:11px 16px;background:none;border:1px solid #eee;border-radius:10px;font-size:13px;cursor:pointer;color:#bbb">
-            초기화
-          </button>
-          <button onclick="closeDayEditModal()"
-            style="padding:11px 16px;background:none;border:1px solid #ddd;border-radius:10px;font-size:13px;cursor:pointer;color:#666;flex:1">
-            취소
-          </button>
-          <button onclick="saveDayEditModal()"
-            style="padding:11px 20px;background:#1a1a1a;color:#fff;border:none;border-radius:10px;font-size:13px;cursor:pointer;font-weight:600;flex:2">
-            저장
-          </button>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- 파견업체 -->
-  <div id="page-agency" class="page">
-    <div class="sec-header">
-      <h2>파견업체 현황</h2>
-      <div class="header-btns">
-        <button class="btn btn-primary" onclick="openAddAgency()">+ 업체 등록</button>
-      </div>
-    </div>
-    <div id="agency-grid"  style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-top:4px"></div>
-  </div>
-</div>
-
-<!-- 신규/수정 모달 -->
-<div class="modal-bg" id="modal" style="display:none">
-  <div class="modal">
-    <h3 id="modal-title">신규 직원 등록</h3>
-
-    <!-- 이력서 자동입력 -->
-    <div class="method-tabs">
-      <button class="m-tab active" onclick="switchUploadMethod('file')">📄 이력서 파일 업로드</button>
-      <button class="m-tab" onclick="switchUploadMethod('text')">📋 텍스트 붙여넣기</button>
-    </div>
-    <div id="up-file">
-      <input type="file" id="resume-input" accept=".pdf,image/*" style="display:none" onchange="handleResume(this)">
-      <div class="upload-zone" id="drop-zone" onclick="document.getElementById('resume-input').click()"
-        ondragover="event.preventDefault();this.classList.add('dragging')"
-        ondragleave="this.classList.remove('dragging')"
-        ondrop="event.preventDefault();this.classList.remove('dragging');handleDrop(event)">
-        <div class="u-icon" id="u-icon">📄</div>
-        <div><div class="u-title" id="u-title">이력서 첨부 → 정보 자동 입력</div>
-        <div class="u-sub">KBS시큐리티 · 모닝인(MI) · 프리머스HR · 자유양식 · PDF · JPG · PNG</div></div>
-      </div>
-    </div>
-    <div id="up-text" style="display:none">
-      <textarea class="paste-area" id="paste-input" placeholder="이력서 내용을 복사해서 붙여넣으세요.&#10;성명, 생년월일, 연락처, 주소, 지원분야 등이 포함되면 자동 인식합니다."></textarea>
-      <button class="btn-parse-text" onclick="parseText()">자동 입력 실행</button>
-    </div>
-    <div class="ai-status" id="ai-status"><div class="spinner"></div><span id="ai-status-text"></span></div>
-    <div class="ai-result" id="ai-result">
-      <div class="ai-result-title">이력서 인식 완료 <span id="fmt-badge" class="fmt-badge fmt-etc" style="font-size:10px"></span></div>
-      <div class="ai-result-grid" id="ai-result-grid"></div>
-    </div>
-
-    <div class="form-grid">
-      <div class="sec-div">기본 정보</div>
-      <div class="fg"><label>관리번호</label><input id="f-code" type="text" placeholder="예) 90012001"></div>
-      <div class="fg"><label>출입증번호</label><input id="f-badge" type="text" placeholder="예) 4898"></div>
-      <div class="fg"><label>성명 <span id="lbl-name"></span></label><input id="f-name" type="text" placeholder="홍길동"></div>
-      <div class="fg"><label>생년월일 <span id="lbl-birth"></span></label><input id="f-birth" type="date"></div>
-      <div class="fg"><label>직군 <span id="lbl-type"></span></label>
-        <select id="f-type" onchange="onModalType('f');autoFillFee('f')">
-          <option value="인제스트">인제스트</option>
-          <option value="촬영보조">촬영보조</option>
-        </select>
-      </div>
-      <div class="fg"><label>등급</label>
-        <select id="f-grade" onchange="autoFillFee('f')"><option value="가">가 등급</option><option value="나">나 등급</option></select>
-      </div>
-      <div class="fg"><label>소속 부서</label>
-        <select id="f-dept">
-          <option value="">자동 (직군 기준)</option>
-          <option value="영상취재1부">영상취재1부</option>
-          <option value="영상취재2부">영상취재2부</option>
-          <option value="뉴스영상콘텐츠부">뉴스영상콘텐츠부</option>
-        </select>
-      </div>
-      <div class="fg"><label>연락처 <span id="lbl-phone"></span></label><input id="f-phone" type="text" placeholder="010-0000-0000"></div>
-      <div class="subtype-box" id="f-subtype-box">
-        <div class="sb-label">촬영보조 세부구분</div>
-        <div class="subtype-btns">
-          <button class="st-btn sel-daily" id="f-st-daily" onclick="selectSub('f','데일리')">데일리</button>
-          <button class="st-btn" id="f-st-special" onclick="selectSub('f','특집')">특집</button>
-          <button class="st-btn" id="f-st-sports" onclick="selectSub('f','스포츠')">스포츠</button>
-        </div>
-        <input type="hidden" id="f-subtype" value="데일리">
-      </div>
-      <div class="fg full"><label>주소 <span id="lbl-addr"></span></label><input id="f-addr" type="text" placeholder="시/도 구/군 상세주소"></div>
-      <div class="sec-div">계약 정보</div>
-      <div class="fg"><label>계약 시작일</label><input id="f-start" type="date"></div>
-      <div class="fg"><label>계약 종료일</label><input id="f-end" type="date"></div>
-      <div class="fg"><label>파견료 (월/원)</label><input id="f-fee" type="number" placeholder="0"></div>
-      <div class="fg"><label>파견업체 <span id="lbl-agency"></span></label><select id="f-agency"><option value="">-- 선택 --</option></select></div>
-      <div class="fg full" style="background:#EEEDFE;border-radius:8px;padding:10px 12px;border:1px solid #C4C0F0">
-        <label style="color:#534AB7;font-weight:600">🔄 등급 변경일 <span style="font-size:10px;font-weight:400;color:#888">(나→가 등급 전환일, 해당 월 일할계산 자동 적용)</span></label>
-        <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
-          <input id="f-grade-change-date" type="date" style="flex:1">
-          <button type="button" onclick="document.getElementById('f-grade-change-date').value=''"
-            style="padding:5px 10px;background:none;border:1px solid #C4C0F0;border-radius:6px;font-size:11px;cursor:pointer;color:#888">삭제</button>
-        </div>
-      </div>
-      <div class="fg full"><label>비고 <span id="lbl-note"></span></label><input id="f-note" type="text" placeholder="특이사항, 파견지 등"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeModal()">취소</button>
-      <button class="btn-save" onclick="saveWorker()">저장</button>
-    </div>
-  </div>
-</div>
-
-<!-- 교체 모달 -->
-<div class="modal-bg" id="modal-replace" style="display:none">
-  <div class="modal">
-    <h3>직원 교체</h3>
-    <p style="font-size:12px;color:#888;margin-bottom:1rem" id="replace-old-info"></p>
-    <input type="file" id="resume-input-r" accept=".pdf,image/*" style="display:none" onchange="handleResumeR(this)">
-    <div class="upload-zone" onclick="document.getElementById('resume-input-r').click()">
-      <div class="u-icon">📄</div>
-      <div><div class="u-title">신규 투입자 이력서 첨부 → 자동 입력</div><div class="u-sub">KBS시큐리티 · 모닝인 · 프리머스HR · 자유양식</div></div>
-    </div>
-    <div class="ai-status" id="ai-status-r"><div class="spinner"></div><span id="ai-status-text-r"></span></div>
-    <div class="ai-result" id="ai-result-r">
-      <div class="ai-result-title">이력서 인식 완료</div>
-      <div class="ai-result-grid" id="ai-result-grid-r"></div>
-    </div>
-    <div class="form-grid">
-      <div class="sec-div">신규 투입자 정보</div>
-      <div class="fg"><label>관리번호</label><input id="r-code" type="text"></div>
-      <div class="fg"><label>출입증번호</label><input id="r-badge" type="text" placeholder="예) 4898"></div>
-      <div class="fg"><label>성명 <span id="rlbl-name"></span></label><input id="r-name" type="text" placeholder="홍길동"></div>
-      <div class="fg"><label>생년월일 <span id="rlbl-birth"></span></label><input id="r-birth" type="date"></div>
-      <div class="fg"><label>직군 <span id="rlbl-type"></span></label>
-        <select id="r-type" onchange="onModalType('r');autoFillFee('r')"><option value="인제스트">인제스트</option><option value="촬영보조">촬영보조</option></select>
-      </div>
-      <div class="fg"><label>등급</label><select id="r-grade" onchange="autoFillFee('r')"><option value="가">가 등급</option><option value="나">나 등급</option></select></div>
-      <div class="fg"><label>소속 부서</label>
-        <select id="r-dept">
-          <option value="">자동 (직군 기준)</option>
-          <option value="영상취재1부">영상취재1부</option>
-          <option value="영상취재2부">영상취재2부</option>
-          <option value="뉴스영상콘텐츠부">뉴스영상콘텐츠부</option>
-        </select>
-      </div>
-      <div class="fg"><label>연락처 <span id="rlbl-phone"></span></label><input id="r-phone" type="text" placeholder="010-0000-0000"></div>
-      <div class="subtype-box" id="r-subtype-box">
-        <div class="sb-label">촬영보조 세부구분</div>
-        <div class="subtype-btns">
-          <button class="st-btn sel-daily" id="r-st-daily" onclick="selectSub('r','데일리')">데일리</button>
-          <button class="st-btn" id="r-st-special" onclick="selectSub('r','특집')">특집</button>
-          <button class="st-btn" id="r-st-sports" onclick="selectSub('r','스포츠')">스포츠</button>
-        </div>
-        <input type="hidden" id="r-subtype" value="데일리">
-      </div>
-      <div class="fg full"><label>주소 <span id="rlbl-addr"></span></label><input id="r-addr" type="text"></div>
-      <div class="sec-div">계약 정보</div>
-      <div class="fg"><label>계약 시작일</label><input id="r-start" type="date"></div>
-      <div class="fg"><label>계약 종료일</label><input id="r-end" type="date"></div>
-      <div class="fg"><label>파견료 (월/원)</label><input id="r-fee" type="number" placeholder="0"></div>
-      <div class="fg"><label>파견업체 <span id="rlbl-agency"></span></label><select id="r-agency"><option value="">-- 선택 --</option></select></div>
-      <div class="fg full"><label>교체 사유</label><input id="r-reason" type="text" placeholder="계약만료, 자진퇴사 등"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="document.getElementById('modal-replace').style.display='none'">취소</button>
-      <button class="btn-save" onclick="doReplace()">교체 완료</button>
-    </div>
-  </div>
-</div>
-
-<!-- 엑셀 가져오기 모달 -->
-<div class="modal-bg" id="modal-import" style="display:none">
-  <div class="modal" style="max-width:600px">
-    <h3>엑셀 파일 가져오기</h3>
-    <input type="file" id="excel-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleExcelFile(this)">
-    <div class="excel-drop" id="excel-drop" onclick="document.getElementById('excel-file-input').click()">
-      <div style="font-size:28px;margin-bottom:8px">📊</div>
-      <div style="font-size:13px;font-weight:600;color:#0F6E56">엑셀 파일 클릭하여 선택</div>
-      <div style="font-size:11px;color:#888;margin-top:4px">.xlsx · .xls · .csv · 최대 500행</div>
-    </div>
-    <div id="import-preview" style="display:none">
-      <div class="import-info" id="import-info-text"></div>
-      <p style="font-size:12px;color:#888;margin-bottom:8px">엑셀 열(column)과 시스템 항목을 연결해 주세요</p>
-      <div class="col-map" id="col-map"></div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="closeImport()">취소</button>
-      <button class="btn-save" id="import-run-btn" onclick="doImport()" style="display:none">가져오기 실행</button>
-    </div>
-  </div>
-</div>
-
-
 <script>
 
 // ─── 기본 상수 ───────────────────────────────────────────
@@ -894,14 +24,14 @@ const FIELDS = [
 const INITIAL_PAYROLL = JSON.parse('{"1_2026_04":{},"2_2026_04":{},"3_2026_04":{},"4_2026_04":{},"5_2026_04":{},"6_2026_04":{},"7_2026_04":{},"8_2026_04":{},"9_2026_04":{},"10_2026_04":{},"11_2026_04":{},"12_2026_04":{},"13_2026_04":{},"101_2026_04":{},"102_2026_04":{},"103_2026_04":{},"104_2026_04":{},"105_2026_04":{},"106_2026_04":{},"107_2026_04":{},"108_2026_04":{},"109_2026_04":{},"110_2026_04":{},"111_2026_04":{},"112_2026_04":{},"113_2026_04":{},"114_2026_04":{},"115_2026_04":{},"116_2026_04":{},"117_2026_04":{},"118_2026_04":{},"119_2026_04":{},"120_2026_04":{},"121_2026_04":{},"122_2026_04":{},"123_2026_04":{},"124_2026_04":{},"125_2026_04":{},"126_2026_04":{},"127_2026_04":{},"128_2026_04":{},"129_2026_04":{},"130_2026_04":{},"131_2026_04":{},"132_2026_04":{},"133_2026_04":{},"134_2026_04":{},"135_2026_04":{},"136_2026_04":{},"137_2026_04":{},"138_2026_04":{},"139_2026_04":{},"140_2026_04":{},"141_2026_04":{},"142_2026_04":{},"201_2026_04":{},"202_2026_04":{},"203_2026_04":{},"204_2026_04":{},"205_2026_04":{},"206_2026_04":{},"301_2026_04":{},"302_2026_04":{},"303_2026_04":{},"304_2026_04":{},"305_2026_04":{},"400_2026_04":{},"401_2026_04":{},"1_2026_03":{"2":{"start":"09:00","end":"20:00","holiday":true},"3":{"start":"10:00","end":"20:00","holiday":true},"4":{"start":"20:00","end":"09:00","holiday":false},"8":{"start":"11:00","end":"22:00","holiday":false},"9":{"start":"11:00","end":"21:00","holiday":false},"10":{"start":"10:00","end":"20:00","holiday":false},"11":{"start":"14:00","end":"22:00","holiday":false},"12":{"start":"14:00","end":"22:00","holiday":false},"13":{"start":"14:00","end":"22:00","holiday":false},"14":{"start":"11:00","end":"22:00","holiday":false},"16":{"start":"10:00","end":"20:00","holiday":false},"17":{"start":"10:00","end":"20:00","holiday":false},"18":{"start":"14:00","end":"22:00","holiday":false},"19":{"start":"11:00","end":"20:00","holiday":false},"20":{"start":"20:00","end":"09:00","holiday":false},"22":{"start":"11:00","end":"22:00","holiday":false},"23":{"start":"09:00","end":"19:00","holiday":false},"24":{"start":"10:00","end":"20:00","holiday":false},"25":{"start":"14:00","end":"22:00","holiday":false},"26":{"start":"14:00","end":"22:00","holiday":false},"27":{"start":"09:00","end":"19:00","holiday":false},"28":{"start":"","end":"","holiday":false},"29":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"09:00","end":"20:00","holiday":false},"31":{"start":"20:00","end":"09:00","holiday":false}},"2_2026_03":{"3":{"start":"14:00","end":"22:00","holiday":true},"4":{"start":"10:00","end":"19:30","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"20:00","end":"09:00","holiday":false,"nextDay":true},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"10:00","end":"20:00","holiday":false},"12":{"start":"10:00","end":"19:00","holiday":false},"13":{"start":"20:00","end":"09:00","holiday":false,"nextDay":true},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"20:00","end":"09:00","holiday":false,"nextDay":true},"22":{"start":"09:00","end":"20:00","holiday":false},"23":{"start":"10:00","end":"19:00","holiday":false},"24":{"start":"11:00","end":"20:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"19:00","holiday":false},"27":{"start":"11:00","end":"20:00","holiday":false},"28":{"start":"20:00","end":"09:00","holiday":false,"nextDay":true},"30":{"start":"14:00","end":"22:00","holiday":false},"31":{"start":"14:00","end":"22:00","holiday":false}},"3_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"11:00","end":"20:00","holiday":false},"6":{"start":"14:00","end":"22:00","holiday":false},"7":{"start":"11:00","end":"22:00","holiday":false},"8":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"10":{"start":"14:00","end":"22:00","holiday":false},"11":{"start":"11:00","end":"20:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"14":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"16":{"start":"14:00","end":"22:00","holiday":false},"17":{"start":"11:00","end":"20:00","holiday":false},"18":{"start":"11:00","end":"20:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"11:00","end":"22:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"26":{"start":"09:00","end":"20:00","holiday":false},"27":{"start":"14:00","end":"22:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"29":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"11:00","end":"20:00","holiday":false},"31":{"start":"10:00","end":"20:00","holiday":false}},"4_2026_03":{"2":{"start":"11:00","end":"22:00","holiday":true},"3":{"start":"20:00","end":"09:00","nextDay":true,"holiday":true},"5":{"start":"14:00","end":"22:00","holiday":false},"6":{"start":"14:00","end":"22:00","holiday":false},"7":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false,"nextDay":false},"10":{"start":"14:00","end":"22:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"11:00","end":"20:00","holiday":false},"15":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"17":{"start":"14:00","end":"22:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"10:00","end":"19:00","holiday":false},"20":{"start":"10:00","end":"19:00","holiday":false},"21":{"start":"20:00","end":"","holiday":false},"23":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"14:00","end":"22:00","holiday":false},"31":{"start":"14:00","end":"22:00","holiday":false}},"5_2026_03":{"1":{"start":"11:00","end":"22:00","holiday":false},"2":{"start":"20:00","end":"09:00","nextDay":true,"holiday":true},"4":{"start":"09:00","end":"18:30","holiday":false},"5":{"start":"09:00","end":"14:00","holiday":false},"8":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"14:00","end":"22:00","holiday":false},"12":{"start":"11:00","end":"20:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"15":{"start":"09:00","end":"20:00","holiday":false},"16":{"start":"14:00","end":"22:00","holiday":false},"17":{"start":"14:00","end":"22:00","holiday":false},"18":{"start":"10:00","end":"19:30","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"20:00","end":"","holiday":false},"22":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"24":{"start":"14:00","end":"22:00","holiday":false},"25":{"start":"10:00","end":"19:00","holiday":false},"26":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"27":{"start":"11:00","end":"22:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"29":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"20:00","end":"","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"6_2026_03":{"4":{"start":"14:00","end":"22:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"7":{"start":"09:00","end":"20:00","holiday":false},"8":{"start":"09:00","end":"21:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"12":{"start":"14:00","end":"22:00","holiday":false},"13":{"start":"10:00","end":"19:00","holiday":false},"15":{"start":"11:00","end":"22:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"14:00","end":"22:00","holiday":false},"20":{"start":"14:00","end":"22:00","holiday":false},"21":{"start":"20:00","end":"","holiday":false},"23":{"start":"14:00","end":"22:00","holiday":false},"24":{"start":"14:00","end":"22:00","holiday":false},"25":{"start":"14:00","end":"22:00","holiday":false},"26":{"start":"14:00","end":"22:00","holiday":false},"27":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"29":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"30":{"start":"20:00","end":"","holiday":false}},"7_2026_03":{"1":{"start":"20:00","end":"09:00","holiday":false},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:30","holiday":false},"5":{"start":"20:00","end":"09:00","holiday":false},"11":{"start":"14:00","end":"22:00","holiday":false},"12":{"start":"14:00","end":"22:00","holiday":false},"13":{"start":"14:00","end":"22:00","holiday":false},"14":{"start":"11:00","end":"22:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"20:00","end":"09:00","holiday":false},"20":{"start":"14:00","end":"22:00","holiday":false},"21":{"start":"11:00","end":"22:00","holiday":false},"23":{"start":"14:00","end":"22:00","holiday":false},"24":{"start":"14:00","end":"22:00","holiday":false},"25":{"start":"11:00","end":"20:00","holiday":false},"26":{"start":"11:00","end":"20:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"29":{"start":"09:00","end":"20:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"8_2026_03":{"1":{"start":"11:00","end":"22:00","holiday":false},"3":{"start":"11:00","end":"22:00","holiday":true},"4":{"start":"11:00","end":"20:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"8":{"start":"09:00","end":"20:00","holiday":false},"9":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"11":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"13":{"start":"14:00","end":"22:00","holiday":false},"16":{"start":"14:00","end":"22:00","holiday":false},"17":{"start":"14:00","end":"22:00","holiday":false},"18":{"start":"14:00","end":"22:00","holiday":false},"19":{"start":"14:00","end":"22:00","holiday":false},"20":{"start":"14:00","end":"22:00","holiday":false},"21":{"start":"20:00","end":"","holiday":false},"22":{"start":"11:00","end":"22:00","holiday":false},"23":{"start":"11:00","end":"20:00","holiday":false},"24":{"start":"11:00","end":"20:00","holiday":false},"25":{"start":"14:00","end":"22:00","holiday":false},"26":{"start":"09:00","end":"20:00","holiday":false},"27":{"start":"11:00","end":"22:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"29":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false}},"9_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"11:00","end":"20:00","holiday":false},"5":{"start":"11:00","end":"20:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"11:00","end":"20:00","holiday":false},"17":{"start":"11:00","end":"20:00","holiday":false},"18":{"start":"11:00","end":"20:00","holiday":false},"19":{"start":"11:00","end":"20:00","holiday":false},"20":{"start":"11:00","end":"20:00","holiday":false},"21":{"start":"20:00","end":"","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"27":{"start":"11:00","end":"22:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"29":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"14:00","end":"22:00","holiday":false},"31":{"start":"11:00","end":"20:00","holiday":false}},"10_2026_03":{"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"11:00","end":"20:00","holiday":false},"6":{"start":"11:00","end":"20:00","holiday":false},"9":{"start":"11:00","end":"20:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"11:00","end":"20:00","holiday":false},"12":{"start":"11:00","end":"20:00","holiday":false},"13":{"start":"11:00","end":"20:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"11:00","end":"20:00","holiday":false},"19":{"start":"14:00","end":"22:00","holiday":false},"20":{"start":"11:00","end":"20:00","holiday":false},"21":{"start":"20:00","end":"","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"11:00","end":"20:00","holiday":false},"26":{"start":"11:00","end":"20:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"29":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"11:00","end":"20:00","holiday":false}},"11_2026_03":{"3":{"start":"11:00","end":"20:00","holiday":true},"4":{"start":"11:00","end":"20:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"11:00","end":"20:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"11:00","end":"20:00","holiday":false},"17":{"start":"11:00","end":"20:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"20:00","end":"","holiday":false},"23":{"start":"11:00","end":"20:00","holiday":false},"24":{"start":"11:00","end":"20:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"29":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"11:00","end":"20:00","holiday":false}},"12_2026_03":{"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"29":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"11:00","end":"20:00","holiday":false},"31":{"start":"11:00","end":"20:00","holiday":false}},"13_2026_03":{"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"101_2026_03":{"2":{"start":"09:00","end":"18:00","holiday":true},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"7":{"start":"09:00","end":"22:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"11":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"14":{"start":"09:00","end":"22:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"09:00","end":"22:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"09:00","end":"22:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"102_2026_03":{"2":{"start":"09:00","end":"18:00","holiday":true},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"20:00","holiday":false},"5":{"start":"17:00","end":"09:00","holiday":false,"nextDay":true},"6":{"start":"","end":"","holiday":false,"nextDay":false},"8":{"start":"18:00","end":"09:00","holiday":false},"10":{"start":"09:00","end":"20:00"},"11":{"start":"09:00","end":"20:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"14":{"start":"19:00","end":"08:00","holiday":false},"16":{"start":"17:00","end":"09:00","holiday":false,"nextDay":true},"18":{"start":"09:00","end":"21:00","holiday":false},"19":{"start":"13:00","end":"23:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"19:00","holiday":false},"24":{"start":"09:00","end":"19:00","holiday":false},"25":{"start":"17:00","end":"09:00","holiday":false,"nextDay":true},"31":{"start":"13:00","end":"22:00","holiday":false}},"103_2026_03":{"3":{"start":"17:00","end":"24:00","holiday":true},"4":{"start":"00:00","end":"09:00","holiday":false},"5":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"06:00","end":"18:00","holiday":false},"12":{"start":"08:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"15":{"start":"18:00","end":"24:00","holiday":false},"16":{"start":"00:00","end":"09:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"17:00","end":"24:00","holiday":false},"21":{"start":"00:00","end":"09:00","holiday":false},"23":{"start":"17:00","end":"24:00","holiday":false},"24":{"start":"00:00","end":"09:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"19:00","end":"24:00","holiday":false},"29":{"start":"00:00","end":"08:00","holiday":false},"30":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"31":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false}},"104_2026_03":{"3":{"start":"08:00","end":"18:00","holiday":true},"4":{"start":"17:00","end":"24:00","holiday":false},"5":{"start":"00:00","end":"09:00","holiday":false},"6":{"start":"09:00","end":"19:00","holiday":false},"9":{"start":"17:00","end":"24:00","holiday":false},"10":{"start":"00:00","end":"09:00","holiday":false},"11":{"start":"08:00","end":"18:00","holiday":false},"12":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"13":{"start":"17:00","end":"24:00","holiday":false},"14":{"start":"00:00","end":"09:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"17:00","end":"24:00","holiday":false},"20":{"start":"00:00","end":"09:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"17:00","end":"24:00","holiday":false},"25":{"start":"00:00","end":"09:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"29":{"start":"18:00","end":"24:00","holiday":false},"30":{"start":"00:00","end":"09:00","holiday":false},"31":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false}},"105_2026_03":{"1":{"start":"09:00","end":"18:00","holiday":false},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"7":{"start":"13:00","end":"21:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"22:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"22":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"22:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"106_2026_03":{"3":{"start":"08:00","end":"19:00","holiday":true},"4":{"start":"08:00","end":"19:00","holiday":false},"5":{"start":"08:00","end":"19:00","holiday":false},"6":{"start":"08:00","end":"19:00","holiday":false},"9":{"start":"08:00","end":"19:00","holiday":false},"10":{"start":"08:00","end":"19:00","holiday":false},"11":{"start":"08:00","end":"19:00","holiday":false},"12":{"start":"08:00","end":"20:00","holiday":false},"13":{"start":"08:00","end":"20:00","holiday":false},"16":{"start":"08:00","end":"19:00","holiday":false},"17":{"start":"08:00","end":"19:00","holiday":false},"18":{"start":"08:00","end":"19:00","holiday":false},"19":{"start":"08:00","end":"19:00","holiday":false},"20":{"start":"08:00","end":"19:00","holiday":false},"23":{"start":"08:00","end":"19:00","holiday":false},"24":{"start":"08:00","end":"19:00","holiday":false},"25":{"start":"08:00","end":"19:00","holiday":false},"26":{"start":"08:00","end":"19:00","holiday":false},"27":{"start":"08:00","end":"19:00","holiday":false},"30":{"start":"08:00","end":"19:00","holiday":false},"31":{"start":"08:00","end":"19:00","holiday":false}},"107_2026_03":{"1":{"start":"18:00","end":"24:00","holiday":false},"2":{"start":"24:00","end":"09:00","nextDay":true,"holiday":true},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"19:00","holiday":false},"5":{"start":"09:00","end":"19:00","holiday":false},"6":{"start":"17:00","end":"24:00","holiday":false},"7":{"start":"00:00","end":"09:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"17:00","end":"24:00","holiday":false},"11":{"start":"00:00","end":"09:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"14":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"21:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"16:00","end":"24:00","holiday":false},"22":{"start":"00:00","end":"08:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"25":{"start":"17:00","end":"24:00","holiday":false},"26":{"start":"00:00","end":"09:00","holiday":false},"27":{"start":"09:00","end":"20:00","holiday":false},"28":{"start":"07:00","end":"18:00","holiday":false},"30":{"start":"17:00","end":"24:00","holiday":false},"31":{"start":"00:00","end":"09:00","holiday":false}},"108_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"08:00","end":"18:00","holiday":false},"7":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"22":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"109_2026_03":{"1":{"start":"09:00","end":"18:00","holiday":false},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"19:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"08:00","end":"18:00","holiday":false},"27":{"start":"08:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false}},"110_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"20:00","holiday":false},"6":{"start":"08:00","end":"19:00","holiday":false},"9":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"10":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"08:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"09:00","end":"18:00","holiday":false},"22":{"start":"09:00","end":"20:00","holiday":false},"23":{"start":"07:00","end":"22:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"111_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"20:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"20:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"112_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"07:00","end":"18:00","holiday":false},"7":{"start":"19:00","end":"24:00","holiday":false},"8":{"start":"00:00","end":"08:00","holiday":false},"9":{"start":"17:00","end":"24:00","holiday":false},"10":{"start":"00:00","end":"09:00","holiday":false},"11":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"12":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"13":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"15":{"start":"08:00","end":"17:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"06:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"19:00","holiday":false},"21":{"start":"15:00","end":"24:00","holiday":false},"22":{"start":"00:00","end":"08:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"08:00","end":"18:00","holiday":false},"28":{"start":"10:00","end":"19:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"17:00","end":"24:00","holiday":false}},"113_2026_03":{"2":{"start":"09:00","end":"19:00","holiday":true},"3":{"start":"08:00","end":"18:00","holiday":true},"4":{"start":"07:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"08:00","end":"19:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"22":{"start":"08:00","end":"18:00","holiday":false},"23":{"start":"08:00","end":"20:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"08:00","end":"19:00","holiday":false},"30":{"start":"09:00","end":"19:00","holiday":false},"31":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false}},"114_2026_03":{"2":{"start":"18:00","end":"24:00","holiday":true},"3":{"start":"00:00","end":"09:00","holiday":true},"4":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"5":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"17:00","end":"24:00","holiday":false},"13":{"start":"00:00","end":"09:00","holiday":false},"15":{"start":"18:00","end":"24:00","holiday":false},"16":{"start":"00:00","end":"09:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"22":{"start":"18:00","end":"24:00","holiday":false},"23":{"start":"00:00","end":"09:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"17:00","end":"24:00","holiday":false},"27":{"start":"00:00","end":"09:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"115_2026_03":{"3":{"start":"08:00","end":"19:00","holiday":true},"4":{"start":"08:00","end":"19:00","holiday":false},"5":{"start":"08:00","end":"19:00","holiday":false},"6":{"start":"08:00","end":"19:00","holiday":false},"9":{"start":"08:00","end":"19:00","holiday":false},"10":{"start":"08:00","end":"19:00","holiday":false},"11":{"start":"08:00","end":"19:00","holiday":false},"12":{"start":"08:00","end":"19:00","holiday":false},"13":{"start":"08:00","end":"19:00","holiday":false},"16":{"start":"08:00","end":"19:00","holiday":false},"17":{"start":"08:00","end":"19:00","holiday":false},"18":{"start":"08:00","end":"19:00","holiday":false},"19":{"start":"08:00","end":"19:00","holiday":false},"20":{"start":"08:00","end":"19:00","holiday":false},"23":{"start":"08:00","end":"19:00","holiday":false},"24":{"start":"08:00","end":"19:00","holiday":false},"25":{"start":"08:00","end":"19:00","holiday":false},"26":{"start":"08:00","end":"19:00","holiday":false},"27":{"start":"08:00","end":"19:00","holiday":false},"30":{"start":"08:00","end":"19:00","holiday":false},"31":{"start":"08:00","end":"19:00","holiday":false}},"116_2026_03":{"3":{"start":"17:00","end":"24:00","holiday":true},"4":{"start":"00:00","end":"09:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"7":{"start":"19:00","end":"24:00","holiday":false},"8":{"start":"00:00","end":"08:00","holiday":false},"9":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"17:00","end":"24:00","holiday":false},"18":{"start":"00:00","end":"09:00","holiday":false},"19":{"start":"07:00","end":"20:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"12:00","end":"23:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"17:00","end":"24:00","holiday":false},"28":{"start":"00:00","end":"09:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"117_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"19:00","holiday":false},"5":{"start":"08:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"7":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"08:00","end":"18:00","holiday":false},"11":{"start":"08:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"14":{"start":"13:00","end":"21:00","holiday":false},"16":{"start":"09:00","end":"19:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"08:00","end":"18:00","holiday":false},"23":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"24":{"start":"09:00","end":"19:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"08:00","end":"18:00","holiday":false},"30":{"start":"08:00","end":"19:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"118_2026_03":{"1":{"start":"00:00","end":"08:00","holiday":false},"2":{"start":"18:00","end":"24:00","holiday":true},"3":{"start":"00:00","end":"09:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"8":{"start":"08:00","end":"17:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"17:00","end":"24:00","holiday":false},"13":{"start":"00:00","end":"09:00","holiday":false},"16":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"17:00","end":"24:00","holiday":false},"19":{"start":"00:00","end":"09:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"22":{"start":"18:00","end":"24:00","holiday":false},"23":{"start":"00:00","end":"09:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"08:00","end":"18:00","holiday":false}},"119_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"08:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"08:00","end":"24:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"08:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"120_2026_03":{"1":{"start":"09:00","end":"18:00","holiday":false},"3":{"start":"09:00","end":"19:00","holiday":true},"4":{"start":"09:00","end":"19:00","holiday":false},"5":{"start":"09:00","end":"19:00","holiday":false},"6":{"start":"08:00","end":"19:00","holiday":false},"9":{"start":"08:00","end":"19:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"08:00","end":"19:00","holiday":false},"16":{"start":"08:00","end":"18:00","holiday":false},"17":{"start":"08:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"08:00","end":"18:00","holiday":false},"20":{"start":"08:00","end":"18:00","holiday":false},"23":{"start":"08:00","end":"19:00","holiday":false},"24":{"start":"08:00","end":"19:00","holiday":false},"25":{"start":"08:00","end":"19:00","holiday":false},"26":{"start":"08:00","end":"21:00","holiday":false},"27":{"start":"08:00","end":"19:00","holiday":false},"28":{"start":"09:00","end":"18:00","holiday":false},"29":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"08:00","end":"18:00","holiday":false},"31":{"start":"08:00","end":"18:00","holiday":false}},"121_2026_03":{"2":{"start":"09:00","end":"18:00","holiday":true},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"18:00","end":"24:00","holiday":false},"5":{"start":"00:00","end":"09:00","holiday":false},"6":{"start":"07:00","end":"19:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"08:00","end":"17:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"06:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"14":{"start":"19:00","end":"24:00","holiday":false},"15":{"start":"00:00","end":"08:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"19:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"22":{"start":"08:00","end":"17:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"17:00","end":"24:00","holiday":false},"25":{"start":"00:00","end":"09:00","holiday":false},"26":{"start":"17:00","end":"24:00","holiday":false},"27":{"start":"00:00","end":"09:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"122_2026_03":{"3":{"start":"08:00","end":"17:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"07:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"17:00","end":"24:00","holiday":false},"12":{"start":"00:00","end":"09:00","holiday":false},"13":{"start":"17:00","end":"24:00","holiday":false},"14":{"start":"00:00","end":"09:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"08:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"17:00","end":"24:00","holiday":false},"20":{"start":"00:00","end":"09:00","holiday":false},"23":{"start":"08:00","end":"17:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"19:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"29":{"start":"18:00","end":"24:00","holiday":false},"30":{"start":"00:00","end":"09:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"123_2026_03":{"1":{"start":"18:00","end":"24:00","holiday":false},"2":{"start":"00:00","end":"09:00","holiday":true},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"08:00","end":"17:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"8":{"start":"18:00","end":"24:00","holiday":false},"9":{"start":"00:00","end":"09:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"08:00","end":"17:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"08:00","end":"18:00","holiday":false},"18":{"start":"17:00","end":"24:00","holiday":false},"19":{"start":"00:00","end":"09:00","holiday":false},"20":{"start":"08:00","end":"17:00","holiday":false},"21":{"start":"12:00","end":"23:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"19:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"19:00","end":"24:00","holiday":false},"29":{"start":"00:00","end":"08:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"124_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"5":{"start":"17:00","end":"24:00","holiday":false},"6":{"start":"00:00","end":"09:00","holiday":false},"9":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"17:00","end":"24:00","holiday":false},"12":{"start":"00:00","end":"09:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"17":{"start":"17:00","end":"24:00","holiday":false},"18":{"start":"00:00","end":"09:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"17:00","end":"24:00","holiday":false},"28":{"start":"00:00","end":"09:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"17:00","end":"24:00","holiday":false}},"125_2026_03":{"2":{"start":"09:00","end":"18:00","holiday":true},"3":{"start":"09:00","end":"21:00","holiday":true},"4":{"start":"13:00","end":"22:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"7":{"start":"09:00","end":"18:00","holiday":false},"8":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"19:00","holiday":false},"10":{"start":"09:00","end":"19:00","holiday":false},"11":{"start":"09:00","end":"19:00","holiday":false},"12":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"13":{"start":"09:00","end":"19:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"08:00","end":"18:00","holiday":false},"25":{"start":"08:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"20:00","holiday":false},"31":{"start":"09:00","end":"19:00","holiday":false}},"126_2026_03":{"3":{"start":"09:00","end":"24:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"21:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"10":{"start":"17:00","end":"24:00","holiday":false},"11":{"start":"00:00","end":"09:00","holiday":false},"12":{"start":"08:00","end":"20:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"14":{"start":"10:00","end":"19:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"08:00","end":"17:00","holiday":false},"18":{"start":"09:00","end":"19:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"17:00","end":"24:00","holiday":false},"21":{"start":"00:00","end":"09:00","holiday":false},"23":{"start":"17:00","end":"24:00","holiday":false},"24":{"start":"00:00","end":"09:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"08:00","end":"18:00","holiday":false},"30":{"start":"17:00","end":"24:00","holiday":false},"31":{"start":"00:00","end":"09:00","holiday":false}},"127_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"19:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"17:00","end":"24:00","holiday":false},"7":{"start":"00:00","end":"09:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"08:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"19:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"17:00","end":"24:00","holiday":false},"17":{"start":"00:00","end":"09:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"07:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"19:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"19:00","holiday":false},"27":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"30":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"128_2026_03":{"1":{"start":"13:00","end":"21:00","holiday":false},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"08:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"19:00","holiday":false},"10":{"start":"09:00","end":"19:00","holiday":false},"11":{"start":"09:00","end":"22:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"19:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"19:00","holiday":false},"18":{"start":"09:00","end":"19:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"09:00","end":"22:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"19:00","holiday":false},"27":{"start":"09:00","end":"19:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"129_2026_03":{"3":{"start":"07:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"19:00","holiday":false},"5":{"start":"08:00","end":"17:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"7":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"08:00","end":"20:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"13:00","end":"22:00","holiday":false},"16":{"start":"13:00","end":"22:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"08:00","end":"18:00","holiday":false},"19":{"start":"08:00","end":"17:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"07:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"25":{"start":"08:00","end":"17:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"29":{"start":"08:00","end":"17:00","holiday":false},"30":{"start":"08:00","end":"17:00","holiday":false},"31":{"start":"13:00","end":"22:00","holiday":false}},"130_2026_03":{"3":{"start":"13:00","end":"23:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"08:00","end":"17:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"13:00","end":"22:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"08:00","end":"17:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"08:00","end":"17:00","holiday":false},"23":{"start":"13:00","end":"22:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"08:00","end":"17:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"08:00","end":"18:00","holiday":false}},"131_2026_03":{"1":{"start":"08:00","end":"18:00","holiday":false},"2":{"start":"13:00","end":"21:00","holiday":true},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"13:00","end":"22:00","holiday":false},"5":{"start":"08:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"8":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"08:00","end":"22:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"13:00","end":"22:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"08:00","end":"18:00","holiday":false},"15":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"20:00","holiday":false},"18":{"start":"09:00","end":"19:00","holiday":false},"19":{"start":"13:00","end":"22:00","holiday":false},"20":{"start":"09:00","end":"19:00","holiday":false},"21":{"start":"13:00","end":"24:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"13:00","end":"22:00","holiday":false},"25":{"start":"08:00","end":"17:00","holiday":false},"26":{"start":"08:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"29":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"20:00","holiday":false},"31":{"start":"08:00","end":"17:00","holiday":false}},"132_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"07:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"12":{"start":"09:00","end":"20:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"14":{"start":"09:00","end":"18:00","holiday":false},"15":{"start":"09:00","end":"19:00","holiday":false},"16":{"start":"09:00","end":"19:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"19:00","holiday":false},"20":{"start":"09:00","end":"19:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"08:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"19:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"133_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"07:00","end":"22:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"19:00","holiday":false},"26":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"27":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"134_2026_03":{"3":{"start":"08:00","end":"17:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"08:00","end":"17:00","holiday":false},"10":{"start":"13:00","end":"22:00","holiday":false},"11":{"start":"08:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"20:00","holiday":false},"14":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"08:00","end":"17:00","holiday":false},"17":{"start":"09:00","end":"20:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"07:00","end":"18:00","holiday":false},"20":{"start":"13:00","end":"22:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"19:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"07:00","end":"18:00","holiday":false},"27":{"start":"06:00","end":"18:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"08:00","end":"17:00","holiday":false}},"135_2026_03":{"1":{"start":"09:00","end":"18:00","holiday":false},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"07:00","end":"18:00","holiday":false},"5":{"start":"13:00","end":"22:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"08:00","end":"20:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"08:00","end":"17:00","holiday":false},"13":{"start":"13:00","end":"22:00","holiday":false},"14":{"start":"13:00","end":"21:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"19:00","holiday":false},"19":{"start":"07:00","end":"18:00","holiday":false},"20":{"start":"13:00","end":"22:00","holiday":false},"23":{"start":"08:00","end":"18:00","holiday":false},"24":{"start":"07:00","end":"18:00","holiday":false},"25":{"start":"13:00","end":"22:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"19:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"20:00","holiday":false}},"136_2026_03":{"3":{"start":"00:00","end":"00:00","nextDay":true,"holiday":true},"4":{"start":"13:00","end":"22:00","holiday":false},"5":{"start":"08:00","end":"18:00","holiday":false},"6":{"start":"08:00","end":"17:00","holiday":false},"8":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"13:00","end":"22:00","holiday":false},"13":{"start":"08:00","end":"17:00","holiday":false},"16":{"start":"13:00","end":"22:00","holiday":false},"17":{"start":"09:00","end":"19:00","holiday":false},"18":{"start":"09:00","end":"19:00","holiday":false},"19":{"start":"09:00","end":"19:00","holiday":false},"20":{"start":"06:00","end":"20:00","holiday":false},"22":{"start":"13:00","end":"21:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"13:00","end":"22:00","holiday":false},"27":{"start":"08:00","end":"19:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"137_2026_03":{"3":{"start":"13:00","end":"22:00","holiday":true},"4":{"start":"09:00","end":"19:00","holiday":false},"5":{"start":"09:00","end":"21:00","holiday":false},"6":{"start":"09:00","end":"19:00","holiday":false},"7":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"08:00","end":"17:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"13:00","end":"24:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"08:00","end":"17:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"13:00","end":"23:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"08:00","end":"17:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"13:00","end":"23:00","holiday":false},"23":{"start":"13:00","end":"22:00","holiday":false},"24":{"start":"08:00","end":"17:00","holiday":false},"25":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"26":{"start":"13:00","end":"22:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"13:00","end":"22:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"138_2026_03":{"2":{"start":"09:00","end":"18:00","holiday":true},"3":{"start":"09:00","end":"24:00","holiday":true},"4":{"start":"13:00","end":"22:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"08:00","end":"17:00","holiday":false},"8":{"start":"13:00","end":"22:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"08:00","end":"17:00","holiday":false},"11":{"start":"07:00","end":"18:00","holiday":false},"12":{"start":"08:00","end":"18:00","holiday":false},"13":{"start":"13:00","end":"22:00","holiday":false},"15":{"start":"13:00","end":"21:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"08:00","end":"18:00","holiday":false},"18":{"start":"13:00","end":"22:00","holiday":false},"19":{"start":"08:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"08:00","end":"17:00","holiday":false},"25":{"start":"08:00","end":"19:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"13:00","end":"21:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"139_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"08:00","end":"17:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"13:00","end":"23:00","holiday":false},"7":{"start":"10:00","end":"19:00","holiday":false},"9":{"start":"13:00","end":"23:00","holiday":false},"10":{"start":"09:00","end":"21:00","holiday":false},"11":{"start":"08:00","end":"17:00","holiday":false},"12":{"start":"09:00","end":"19:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"13:00","end":"22:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"08:00","end":"17:00","holiday":false},"19":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"13:00","end":"24:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"08:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"08:00","end":"18:00","holiday":false},"27":{"start":"13:00","end":"22:00","holiday":false},"29":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"140_2026_03":{"3":{"start":"09:00","end":"19:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"13:00","end":"22:00","holiday":false},"7":{"start":"13:00","end":"21:00","holiday":false},"9":{"start":"08:00","end":"20:00","holiday":false},"10":{"start":"13:00","end":"22:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"07:00","end":"21:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"13:00","end":"22:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"08:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"22":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"08:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"19:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"13:00","end":"22:00","holiday":false},"30":{"start":"08:00","end":"17:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"141_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"07:00","end":"20:00","holiday":false},"6":{"start":"13:00","end":"22:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"07:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"21:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"15":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"19:00","holiday":false},"17":{"start":"08:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"13:00","end":"22:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"29":{"start":"13:00","end":"21:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"142_2026_03":{"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"08:00","end":"17:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"08:00","end":"17:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"22:00","holiday":false},"26":{"start":"08:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"201_2026_03":{},"202_2026_03":{},"203_2026_03":{},"204_2026_03":{},"205_2026_03":{},"206_2026_03":{},"301_2026_03":{},"302_2026_03":{},"303_2026_03":{},"304_2026_03":{},"305_2026_03":{},"400_2026_03":{},"401_2026_03":{},"1_2026_02":{"2":{"start":"09:00","end":"19:00","holiday":false},"3":{"start":"10:00","end":"20:00","holiday":false},"4":{"start":"10:00","end":"21:00","holiday":false},"5":{"start":"10:00","end":"20:00","holiday":false},"6":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"8":{"start":"11:00","end":"22:00","holiday":false},"9":{"start":"14:00","end":"22:00","holiday":false},"10":{"start":"14:00","end":"22:00","holiday":false},"11":{"start":"14:00","end":"22:00","holiday":false},"12":{"start":"10:00","end":"20:00","holiday":false},"13":{"start":"09:00","end":"20:00","holiday":false},"15":{"start":"09:00","end":"20:00","holiday":false},"16":{"start":"11:00","end":"22:00","holiday":true},"17":{"start":"20:00","end":"09:00","nextDay":true,"holiday":true},"18":{"start":"11:00","end":"20:00","holiday":false},"19":{"start":"14:00","end":"22:00","holiday":false},"20":{"start":"14:00","end":"22:00","holiday":false},"21":{"start":"20:00","end":"","holiday":false},"23":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"14:00","end":"22:00","holiday":false},"26":{"start":"11:00","end":"20:00","holiday":false},"27":{"start":"11:00","end":"20:00","holiday":false},"28":{"start":"11:00","end":"22:00","holiday":false}},"2_2026_02":{},"3_2026_02":{},"4_2026_02":{},"5_2026_02":{},"6_2026_02":{},"7_2026_02":{},"8_2026_02":{},"9_2026_02":{},"10_2026_02":{},"11_2026_02":{},"12_2026_02":{},"13_2026_02":{},"101_2026_02":{},"102_2026_02":{},"103_2026_02":{},"104_2026_02":{},"105_2026_02":{},"106_2026_02":{},"107_2026_02":{},"108_2026_02":{},"109_2026_02":{},"110_2026_02":{},"111_2026_02":{},"112_2026_02":{},"113_2026_02":{},"114_2026_02":{},"115_2026_02":{},"116_2026_02":{},"117_2026_02":{},"118_2026_02":{},"119_2026_02":{},"120_2026_02":{},"121_2026_02":{},"122_2026_02":{},"123_2026_02":{},"124_2026_02":{},"125_2026_02":{},"126_2026_02":{},"127_2026_02":{},"128_2026_02":{},"129_2026_02":{},"130_2026_02":{},"131_2026_02":{},"132_2026_02":{},"133_2026_02":{},"134_2026_02":{},"135_2026_02":{},"136_2026_02":{},"137_2026_02":{},"138_2026_02":{},"139_2026_02":{},"140_2026_02":{},"141_2026_02":{},"142_2026_02":{},"201_2026_02":{},"202_2026_02":{},"203_2026_02":{},"204_2026_02":{},"205_2026_02":{},"206_2026_02":{},"301_2026_02":{},"302_2026_02":{},"303_2026_02":{},"304_2026_02":{},"305_2026_02":{},"400_2026_02":{},"401_2026_02":{}}');
 const INITIAL_HISTORY = JSON.parse('[{"date":"2026-04-13","type":"교체","name":"이민주","role":"인제스트","subtype":"","grade":"나","prev":"김정윤","reason":"계약만료"},{"date":"2026-04-13","type":"교체","name":"이소연","role":"인제스트","subtype":"","grade":"나","prev":"남유림","reason":"교체"}]');
 let workers = [
-  {id:1,code:"90011862",name:"김정윤",birth:"2002-02-20",type:"인제스트",subtype:"",grade:"가",start:"2024-04-16",end:"2026-04-15",agency:"MJ플렉스",fee:3086270,phone:"010-9948-8830",addr:"서울시 상서구 화곡동 1110",badge:"4898",status:"계약종료",note:"",replacedBy:"이민주"},
+  {id:1,code:"90011862",name:"김정윤",birth:"2002-02-20",type:"인제스트",subtype:"",grade:"가",start:"2024-04-16",end:"2026-04-15",agency:"MJ플렉스",fee:3086270,phone:"010-9948-8830",addr:"서울시 상서구 화곡동 1110",badge:"4898",status:"근무중",note:"",replacedBy:""},
   {id:2,code:"90011937",name:"임민영",birth:"1999-09-27",type:"인제스트",subtype:"",grade:"가",start:"2024-08-20",end:"2026-08-19",agency:"모닝인",fee:3086270,phone:"010-8794-7096",addr:"인천시 남동구 남촌동 75번길 3-1 태성하이츠빌 B동",badge:"5031",status:"근무중",note:"",replacedBy:""},
   {id:3,code:"90011981",name:"이소현",birth:"1996-10-26",type:"인제스트",subtype:"",grade:"가",start:"2024-10-15",end:"2026-10-14",agency:"KBS시큐리티",fee:3086270,phone:"010-2541-8760",addr:"서울시 강서구 강서로5가길 56,403호",badge:"4854",status:"근무중",note:"",replacedBy:""},
   {id:4,code:"90011970",name:"이 원",birth:"1991-11-24",type:"인제스트",subtype:"",grade:"가",start:"2024-10-16",end:"2026-10-15",agency:"키스템프그룹",fee:3086270,phone:"010-8096-8884",addr:"서울시 중랑구 면복동 127-20번지 101호",badge:"5146",status:"근무중",note:"",replacedBy:""},
   {id:5,code:"90012031",name:"박민정",birth:"2000-03-04",type:"인제스트",subtype:"",grade:"가",start:"2025-01-06",end:"2027-01-05",agency:"프리머스HR",fee:3086270,phone:"010-9844-5758",addr:"서울시 은평구 서오릉로7길 9-19(역촌동,태영빌라)",badge:"4767",status:"근무중",note:"등급변경(1월6일)",replacedBy:""},
   {id:6,code:"90012078",name:"김선화",birth:"1996-03-25",type:"인제스트",subtype:"",grade:"가",start:"2025-03-05",end:"2027-03-04",agency:"키스템프그룹",fee:2999700,phone:"010-5273-3752",addr:"서울시 은평구 대조동 50-4",badge:"778",status:"근무중",note:"",replacedBy:""},
   {id:7,code:"90012111",name:"조수빈",birth:"1998-05-25",type:"인제스트",subtype:"",grade:"가",start:"2025-04-01",end:"2027-03-31",agency:"모닝인",fee:2999700,phone:"010-3348-7232",addr:"서울시 강서구 화곡로42길 20 더프라임 901호",badge:"4193",status:"근무중",note:"",replacedBy:""},
-  {id:8,code:"90012133",name:"남유림",birth:"2001-10-19",type:"인제스트",subtype:"",grade:"나",start:"2025-04-21",end:"2026-04-20",agency:"MJ플렉스",fee:2999700,phone:"010-2423-0975",addr:"서울시 마포구 서강로 75-16",badge:"3514",status:"계약종료",note:"",replacedBy:"이소연"},
+  {id:8,code:"90012133",name:"남유림",birth:"2001-10-19",type:"인제스트",subtype:"",grade:"나",start:"2025-04-21",end:"2026-04-20",agency:"MJ플렉스",fee:2999700,phone:"010-2423-0975",addr:"서울시 마포구 서강로 75-16",badge:"3514",status:"근무중",note:"",replacedBy:""},
   {id:9,code:"90012313",name:"김학겸",birth:"1992-03-23",type:"인제스트",subtype:"",grade:"나",start:"2026-01-30",end:"2027-01-29",agency:"크릭앤리버",fee:2999700,phone:"010-3095-1458",addr:"서울시 서초구 양재동 265-8",badge:"5294",status:"근무중",note:"",replacedBy:""},
   {id:10,code:"90012334",name:"박려원",birth:"1997-02-20",type:"인제스트",subtype:"",grade:"가",start:"2026-02-24",end:"2027-02-23",agency:"KBS시큐리티",fee:3086270,phone:"010-8769-4280",addr:"서울시 강서구 등촌동 640-13 플러스트윈빌 A동",badge:"842",status:"근무중",note:"",replacedBy:""},
   {id:11,code:"90012333",name:"백수아",birth:"2001-09-10",type:"인제스트",subtype:"",grade:"나",start:"2026-02-24",end:"2027-02-23",agency:"MJ플렉스",fee:2999700,phone:"010-4993-8925",addr:"경기도 고양시 덕양구 화신로 340, 714동 802호",badge:"178",status:"근무중",note:"",replacedBy:""},
@@ -963,14 +93,13 @@ let workers = [
   {id:303,code:"90012123",name:"박지수",birth:"1997-07-04",type:"촬영보조",subtype:"스포츠",grade:"가",start:"2025-04-07",end:"2026-04-06",agency:"키스템프그룹",fee:3086270,phone:"010-3743-4664",addr:"서울시 양천구 신월동 443-6 엘리시안 201호",badge:"4369",status:"근무중",note:"데스크",replacedBy:""},
   {id:304,code:"90012057",name:"이선재",birth:"2001-12-19",type:"촬영보조",subtype:"스포츠",grade:"가",start:"2025-02-10",end:"2027-02-09",agency:"모닝인",fee:3086270,phone:"010-9592-5600",addr:"서울시 관악구 신림동459-42 104호",badge:"4711",status:"근무중",note:"",replacedBy:""},
   {id:305,code:"90012250",name:"정예준",birth:"2004-11-13",type:"촬영보조",subtype:"스포츠",grade:"가",start:"2025-10-13",end:"2026-10-12",agency:"키스템프그룹",fee:3086270,phone:"010-8707-9857",addr:"서울시 강서구 방화대로 8길 50",badge:"4229",status:"근무중",note:"",replacedBy:""},
-  // ─── 교체 투입자 ──────────────────────────────────────────
-  {id:400,code:"2026-067",name:"이민주",birth:"1996-09-27",type:"인제스트",subtype:"",grade:"나",start:"2026-04-16",end:"2027-04-15",agency:"키스템프그룹",fee:2999700,phone:"010-7471-8500",addr:"경기도 부천시 부일로 330 번길 9",badge:"",status:"근무중",note:"",replacedBy:"",dept:"뉴스영상콘텐츠부"},
-  {id:401,code:"2026-068",name:"이소연",birth:"1994-03-25",type:"인제스트",subtype:"",grade:"나",start:"2026-04-20",end:"2027-04-19",agency:"MJ플렉스",fee:2999700,phone:"010-3640-3364",addr:"서울시 관악구 봉천동 673-230 나동 102 호 ",badge:"",status:"근무중",note:"",replacedBy:"",dept:"뉴스영상콘텐츠부"},
 ];
 
-let history = [];
+let history = [,
+  {id:400,code:"2026-067",name:"이민주",birth:"1996-09-27",type:"인제스트",subtype:"",grade:"나",start:"2026-04-16",end:"2027-04-15",agency:"키스템프그룹",fee:2999700,phone:"010-7471-8500",addr:"경기도 부천시 부일로 330 번길 9",status:"근무중",note:""},
+  {id:401,code:"2026-068",name:"이소연",birth:"1994-03-25",type:"인제스트",subtype:"",grade:"나",start:"2026-04-20",end:"2027-04-19",agency:"MJ플렉스",fee:2999700,phone:"010-3640-3364",addr:"서울시 관악구 봉천동 673-230 나동 102 호 ",status:"근무중",note:""}];
 let filterDept = ''; // 현재 선택된 부서 탭
-let nextId = 402, nextSeq = 69, editId = null, replaceTargetId = null, curPage = 1;
+let nextId = 400, nextSeq = 67, editId = null, replaceTargetId = null, curPage = 1;
 let excelHeaders=[], excelRows=[], colMap={};
 
 // ─── 유틸 ────────────────────────────────────────────────
@@ -1312,64 +441,37 @@ async function extractPdfText(file) {
 }
 function parseTextLocally(text){
   const r={};
-  // ── 성명 파싱: "성명(한글)" 또는 "성명 한글" 다음 이름 ──────
-  // 최우선: 성명 뒤 줄바꿈 포함 30자 이내 한글/（한글) + 이름
-  let nm=text.match(/성\s*명[\s\S]{0,30}?(?:\(한\s*글\)|한\s*글)\s+([가-힣]{2,5})/);
-  // 차선: (한글) 이름 직접 패턴
-  if(!nm) nm=text.match(/\(한\s*글\)\s+([가-힣]{2,5})/);
-  // 이름 레이블
-  if(!nm) nm=text.match(/이\s*름\s+([가-힣]{2,5})\s+(?:영문|英文|군필)/);
-  // 한글 레이블 + lookahead
-  if(!nm) nm=text.match(/한\s*글\s+([가-힣\s]{2,7})(?=\s+(?:생년|영\s*문|이메일|종\s*교|최종|연\s*령))/);
-  // 공백 포함 이름 (박 아 름)
-  if(!nm) nm=text.match(/\(한글\)\s+([가-힣\s]{2,7})(?=\s+(?:종|특|생년|직|연|지))/);
-  // 성명 공백 이름
-  if(!nm) nm=text.match(/성\s*명\s+([가-힣\s]{2,7})(?=\s+(?:생년|영문|이메일|연락|주소))/);
-  // 최후: 일반 성명/이름
-  if(!nm) nm=text.match(/(?:성\s*명|이\s*름)\s+([가-힣]{2,5})(?!\s*(?:한자|고등|대학))/);
-  if(nm) r.name=nm[1].replace(/\s/g,'').trim();
-
-  // ── 생년월일 ──────────────────────────────────────────────
-  let bd=text.match(/([12][0-9]{3})\s*년\s*([0-9]{1,2})\s*월\s*([0-9]{1,2})\s*일/);
-  if(!bd) bd=text.match(/생년월일\s*[:\s]*([12][0-9]{3})[.\-\/]\s*([0-9]{1,2})[.\-\/]\s*([0-9]{1,2})/);
-  if(!bd) bd=text.match(/생년월일\s*([12][0-9]{3})([0-9]{2})([0-9]{2})\b/);  // 19990805
-  if(!bd){  // 레이블 없는 날짜: 1996.02.15
-    const raw=text.match(/\b([12][0-9]{3})[.\-]([0-9]{1,2})[.\-]([0-9]{1,2})\b/);
-    if(raw&&parseInt(raw[2])<=12&&parseInt(raw[3])<=31) bd=raw;
-  }
+  // 성명: (한글) 등 괄호 표기 제외하고 순수 이름만 추출
+  // 성명 인식: "성명 한글 이소연" / "성명 이소연" 형식 모두 처리
+  let nm = text.match(/성\s*명\s+한\s*글\s+([가-힣]{2,5})/);
+  if(!nm) nm = text.match(/(?:성\s*명|이\s*름)\s+([가-힣]{2,5})(?!\s*(?:영문|한자|고등|대학))/);
+  if(nm) r.name=nm[1];
+  // 생년월일
+  // 생년월일: 1994년 03월 25일 / 1994.03.25 / 1994-03-25 모두 처리
+  let bd = text.match(/([0-9]{4})\s*년\s*([0-9]{1,2})\s*월\s*([0-9]{1,2})\s*일/);
+  if(!bd) bd = text.match(/생년월일\s*[:\s]*([0-9]{4})[.\-\/]\s*([0-9]{1,2})[.\-\/]\s*([0-9]{1,2})/);
   if(bd) r.birth=`${bd[1]}-${String(bd[2]).padStart(2,'0')}-${String(bd[3]).padStart(2,'0')}`;
-
-  // ── 연락처 (공백 포함 레이블 대응) ───────────────────────
-  // "연 락 처", "휴대폰 번호", "(휴대폰) 010-" 등 대응
-  let ph=text.match(/(?:휴대폰|연\s*락\s*처|핸드폰|전화번호)[\s번:()]*([0-9]{3}[-\s]?[0-9]{3,4}[-\s]?[0-9]{4})/);
-  if(!ph) ph=text.match(/\b(01[016789][-\s]?[0-9]{3,4}[-\s]?[0-9]{4})\b/);  // 010 시작 번호 fallback
-  if(ph){const p=(ph[1]||ph[0]).replace(/\D/g,'');if(p.length>=10)r.phone=`${p.slice(0,3)}-${p.slice(3,7)}-${p.slice(7)}`;}
-
-  // ── 주소 ─────────────────────────────────────────────────
-  const ad=text.match(/(?:현\s*주\s*소|주\s*소)\s*[:]*\s*([가-힣\d\s\-,.()]+(?:동|로|길)[가-힣\d\s\-,.()]{2,50})/);
-  if(ad) r.addr=ad[1].replace(/\s+/g,' ').trim().replace(/\s*(전화|이메일|연락|휴대).+$/,'').slice(0,60);
-
-  // ── 파견업체 ─────────────────────────────────────────────
+  // 연락처
+  const ph=text.match(/(?:휴대폰|연락처|핸드폰)[\s:]*([0-9]{3}[-\s]?[0-9]{3,4}[-\s]?[0-9]{4})/);
+  if(ph){const p=ph[1].replace(/\D/g,'');r.phone=`${p.slice(0,3)}-${p.slice(3,7)}-${p.slice(7)}`;}
+  // 주소
+  const ad=text.match(/(?:현\s*주\s*소|주\s*소)[\s:]*([가-힣\d\s\-,.()]+(?:동|로|길|구|시|도)[가-힣\d\s\-,.()]{2,60})/);
+  if(ad) r.addr=ad[1].replace(/\s+/g,' ').trim().slice(0,80);
+  // 파견업체
   const agMap=[
     ['KBS시큐리티',/KBS\s*시큐리티|kbssecurity/i],
     ['모닝인',/MORNING\s*IN|모닝인/i],
     ['프리머스HR',/PRIMUS\s*HR|프리머스/i],
     ['키스템프그룹',/KISTEMP|키스템프/i],
-    ['MJ플렉스',/MEDIAJOB|MJ\s*PLEX|MJ플렉스|\(주\)MJ/i],
-    ['피플씨앤에스',/피플씨앤에스|People\s*C/i],
+    ['MJ플렉스',/MEDIAJOB|MJ\s*PLEX|MJ플렉스|\(주\)MJ|mjflex/i],
+    ['피플씨앤에스',/피플씨앤에스|People\s*C.S/i],
     ['크릭앤리버',/CREEK.*RIVER|크릭앤리버/i],
-    ['유니에스',/유니에스|unies/i],
+    ['유니에스',/유니에스/i],
   ];
-  for(const [nm2,re2] of agMap){if(re2.test(text)){r.agency=nm2;break;}}
-
-  // ── 직군 ─────────────────────────────────────────────────
-  if(/인제스트|KDNS입출력|KDNS|뉴스영상콘텐츠부|뉴스영상컨텐츠부/.test(text)) r.type='인제스트';
-  else if(/촬영보조|영상제작보조|영상취재/.test(text)) r.type='촬영보조';
-
-  // ── 지원부서 ─────────────────────────────────────────────
-  const dp=text.match(/(?:응시|지원)\s*(?:부서|분야)\s*[:\s]*([가-힣]+(?:1|2)?부)/);
-  if(dp) r.dept=dp[1];
-
+  for(const [nm2,re] of agMap){if(re.test(text)){r.agency=nm2;break;}}
+  // 직군
+  if(/인제스트|KDNS/.test(text)) r.type='인제스트';
+  else if(/촬영보조|영상제작보조|카메라보조|오디오맨/.test(text)) r.type='촬영보조';
   return r;
 }
 async function parseResumeLocal(file,sEl,sTxt,fp,lblPfx,resBoxId,resGridId,badgeId){
@@ -1677,12 +779,11 @@ function doReplace() {
   const old=workers.find(x=>x.id===replaceTargetId);
   const grade=document.getElementById('r-grade').value;
   old.status='계약종료'; old.replacedBy=name;
-  const newDept = document.getElementById('r-dept')?.value || old.dept || '';
   workers.push({id:nextId++,code:document.getElementById('r-code').value||genCode(),badge:document.getElementById('r-badge')?.value||'',name,
     birth:document.getElementById('r-birth').value,type,subtype,grade,start,end,
     agency:document.getElementById('r-agency').value,fee:Number(document.getElementById('r-fee').value)||0,
     phone:document.getElementById('r-phone').value,addr:document.getElementById('r-addr').value,
-    dept:newDept,status:'근무중',note:'',replacedBy:''});
+    status:'근무중',note:'',replacedBy:''});
   history.push({date:today,type:'교체',name,role:type,subtype,grade,prev:old.name,reason:document.getElementById('r-reason').value||'교체'});
   nextSeq++;
   document.getElementById('modal-replace').style.display='none';
@@ -2382,25 +1483,21 @@ function buildDailyDetail(id,year,month){
           <div style="display:flex;flex-direction:column;gap:2px">
             <span style="font-size:9px;color:#aaa;text-align:center">출근</span>
             <input type="text" id="inp-s-${d}" placeholder="09:00" maxlength="5" value="${dd.start||''}"
-              data-id="${id}" data-year="${year}" data-month="${month}" data-day="${d}" data-field="start"
               style="width:60px;padding:6px 5px;border:1.5px solid ${dd.start?'#378ADD':'#e0e0e0'};border-radius:7px;font-size:14px;text-align:center;background:${dd.start?'#EBF4FF':'#fafaf8'};font-weight:${dd.start?'600':'400'};cursor:text;letter-spacing:1px"
               oninput="autoFmtTime(this)"
-              onchange="saveDayData(${id},${year},${month},${d},'start',this.value);refreshDetailSummary(${id},${year},${month})"
               onkeydown="if(event.key==='Enter'||event.key==='Tab'){saveDayData(${id},${year},${month},${d},'start',this.value);document.getElementById('inp-e-${d}').focus();event.preventDefault();}" onclick="this.select()"
               onfocus="this.select()"
-              onblur="saveDayData(${id},${year},${month},${d},'start',this.value);setTimeout(()=>refreshDetailSummary(${id},${year},${month}),80)">
+              onblur="saveDayData(${id},${year},${month},${d},'start',this.value)">
           </div>
           <span style="color:#ccc;font-size:18px;margin-top:10px">~</span>
           <div style="display:flex;flex-direction:column;gap:2px">
             <span style="font-size:9px;color:#aaa;text-align:center">퇴근</span>
             <input type="text" id="inp-e-${d}" placeholder="18:00" maxlength="5" value="${dd.end||''}"
-              data-id="${id}" data-year="${year}" data-month="${month}" data-day="${d}" data-field="end"
               style="width:60px;padding:6px 5px;border:1.5px solid ${dd.end?'#378ADD':'#e0e0e0'};border-radius:7px;font-size:14px;text-align:center;background:${dd.end?'#EBF4FF':'#fafaf8'};font-weight:${dd.end?'600':'400'};cursor:text;letter-spacing:1px"
               oninput="autoFmtTime(this)"
-              onchange="saveDayData(${id},${year},${month},${d},'end',this.value);refreshDetailSummary(${id},${year},${month})"
               onkeydown="if(event.key==='Enter'||event.key==='Tab'){saveDayData(${id},${year},${month},${d},'end',this.value);this.blur();event.preventDefault();}" onclick="this.select()"
               onfocus="this.select()"
-              onblur="saveDayData(${id},${year},${month},${d},'end',this.value);setTimeout(()=>refreshDetailSummary(${id},${year},${month}),80)">
+              onblur="saveDayData(${id},${year},${month},${d},'end',this.value)">
           </div>
           <div style="display:flex;flex-direction:column;align-items:center;gap:2px;margin-top:8px">
             <span style="font-size:9px;color:#aaa">익일</span>
@@ -2549,18 +1646,16 @@ function buildDailyDetail(id,year,month){
           <td style="border-right:1px solid #ddd"></td>
           <td style="padding:11px 10px;border-right:1px solid #ddd">
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <span id="sum-work-h" style="font-size:14px;font-weight:700;color:${overStd?'#A32D2D':'#333'}">${sumWork.toFixed(1)}h</span>
-              <span id="sum-over-badge">${overStd?`<span style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:2px 8px;border-radius:4px;font-weight:500">208h 초과</span>`:''}</span>
+              <span style="font-size:14px;font-weight:700;color:${overStd?'#A32D2D':'#333'}">${sumWork.toFixed(1)}h</span>
+              ${overStd?`<span style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:2px 8px;border-radius:4px;font-weight:500">208h 초과</span>`:''}
               <span style="color:#ddd">|</span>
-              <span id="sum-oth" style="font-size:12px;color:#854F0B;font-weight:600">시간외 ${sumOtH.toFixed(1)}h</span>
-              <span id="sum-ot4badges">${sumOt4.map((h,i)=>h>0?`<span style="background:${OT4_BG[i]};color:${OT4_COL[i]};padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500">${OT4_LBL[i]} ${h.toFixed(1)}h</span>`:'').join('')}</span>
+              <span style="font-size:12px;color:#854F0B;font-weight:600">시간외 ${sumOtH.toFixed(1)}h</span>
+              ${sumOt4.map((h,i)=>h>0?`<span style="background:${OT4_BG[i]};color:${OT4_COL[i]};padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500">${OT4_LBL[i]} ${h.toFixed(1)}h</span>`:'').join('')}
             </div>
           </td>
-          <td id="sum-pay-cell" style="padding:11px 10px;text-align:right;border-right:1px solid #ddd">
-            <span style="font-size:14px;font-weight:700;color:#854F0B">${KR(sumPay)}</span>
-            <span style="font-size:10px;color:#aaa;margin-left:2px">원</span>
-          </td>
-        </tr>      </table>
+          <td style="padding:11px 10px;text-align:right;font-size:14px;color:#185FA5">${KR(sumPay)}<span style="font-size:11px;font-weight:400;margin-left:2px">원</span></td>
+        </tr>
+      </table>
     </div>
   </div>`;
 }
@@ -2649,23 +1744,6 @@ async function processPdfFile(file, silent=false){
     }).filter(Boolean);
 
     const fullText = textLines.join('\n');
-
-    // 디버그: 추출 텍스트가 0줄이면 에러 표시
-    if(!silent && textLines.length === 0){
-      showAttResult('error', 'PDF에서 텍스트를 추출할 수 없습니다.\nPDF가 이미지 스캔본이거나 보호된 파일일 수 있습니다.');
-      return {ok:false, msg:'텍스트 없음'};
-    }
-
-    // 디버그 팝업: 추출된 원문 텍스트 확인
-    if(!silent){
-      const preview = textLines.slice(0,30).join('\n');
-      const debugEl = document.getElementById('pdf-debug-box');
-      if(debugEl){
-        debugEl.style.display='block';
-        document.getElementById('pdf-debug-pre').textContent = preview;
-      }
-    }
-
     return parsePdfAttendanceText(fullText, silent);
   } catch(e) {
     if(!silent) showAttResult('error','PDF 읽기 실패: '+e.message);
@@ -2679,95 +1757,87 @@ function parsePdfAttendanceText(text, silent=false){
 
   // ── 연도/월 추출
   let year=0, month=0;
-  const YM_PATS=[
-    /(\d{4})\s*년\s*(\d{1,2})\s*월/,
-    /(\d{4})\s*\.\s*(\d{1,2})\s*\./,
-    /(\d{4})\s+(\d{1,2})\s+\d{1,2}/,
-  ];
+  const YM = /(\d{4})\s*년\s*(\d{1,2})\s*월/;
   for(const src of [flatText,...lines]){
-    for(const pat of YM_PATS){
-      const m=src.match(pat);
-      if(m){year=parseInt(m[1]);month=parseInt(m[2]);break;}
-    }
-    if(year&&month) break;
+    const m = src.match(YM);
+    if(m){ year=parseInt(m[1]); month=parseInt(m[2]); break; }
   }
   if(!year||!month){
-    const msg=`PDF에서 연도/월을 찾을 수 없습니다.\n앞부분:\n${lines.slice(0,6).join('\n')}`;
-    if(!silent) showAttResult('error',msg);
-    return {ok:false,msg};
+    const msg = 'PDF에서 연도/월을 찾을 수 없습니다.';
+    if(!silent) showAttResult('error', msg);
+    return {ok:false, msg};
   }
 
-  // ── 성명 추출
-  let nameParsed='';
-  const NM_PATS=[
-    /성\s*명\s*[\/:\s부서]*\s*([가-힣]{2,5})/,
+  // ── 성명 추출 (workers 목록과 직접 대조)
+  let nameParsed = '';
+  const NM_PATS = [
+    /성\s*명\s*[\/\s부서]*\s*([가-힣]{2,5})/,
     /이\s*름\s*[:\s]*([가-힣]{2,5})/,
   ];
   outer: for(const src of [flatText,...lines]){
     for(const pat of NM_PATS){
-      const m=src.match(pat);
+      const m = src.match(pat);
       if(!m) continue;
-      let cand=m[1];
-      for(let len=5;len>=2;len--){
-        const sub=cand.slice(0,len);
-        if(workers.find(w=>w.name.trim().replace(/\s/g,'')===sub)){nameParsed=sub;break outer;}
+      let cand = m[1];
+      for(let len=5; len>=2; len--){
+        const sub = cand.slice(0,len);
+        if(workers.find(w=>w.name.trim().replace(/\s/g,'')===sub)){
+          nameParsed=sub; break outer;
+        }
       }
       if(!nameParsed) nameParsed=cand.slice(0,4);
     }
     if(nameParsed) break;
   }
+  // fallback: workers 이름을 텍스트에서 직접 검색
   if(!nameParsed){
     for(const w of workers){
-      const nm=w.name.trim().replace(/\s/g,'');
-      if(nm.length>=2&&flatText.replace(/\s/g,'').includes(nm)){nameParsed=nm;break;}
+      const nm = w.name.trim().replace(/\s/g,'');
+      if(nm.length>=2 && flatText.includes(nm)){ nameParsed=nm; break; }
     }
   }
   if(!nameParsed){
-    const msg=`PDF에서 성명을 찾을 수 없습니다.\n텍스트 샘플:\n${lines.slice(0,8).join('\n')}`;
-    if(!silent) showAttResult('error',msg);
-    return {ok:false,msg};
+    const msg = 'PDF에서 성명을 찾을 수 없습니다.';
+    if(!silent) showAttResult('error', msg);
+    return {ok:false, msg};
   }
 
-  const worker=workers.find(w=>w.name.trim().replace(/\s/g,'')===nameParsed.replace(/\s/g,''));
+  const worker = workers.find(w=>w.name.trim().replace(/\s/g,'')===nameParsed.replace(/\s/g,''));
   if(!worker){
-    if(!silent) showAttResult('error',`"${nameParsed}" 직원을 목록에서 찾을 수 없습니다.`);
-    return {ok:false,msg:`${nameParsed} 없음`};
+    const msg = `"${nameParsed}" 직원을 목록에서 찾을 수 없습니다.`;
+    if(!silent) showAttResult('error', msg);
+    return {ok:false, msg};
   }
 
-  // ── 날짜 파싱
-  // 실제 형식: "2026. 3. 4수 09:0018:00..." 
-  // → 요일이 날짜에 바로 붙고, 시간도 붙어있음
-  const DATE_RE = /(\d{4})\s*\.\s*(\d{1,2})\s*\.\s*(\d{1,2})(일|월|화|수|목|금|토)/;
-  // \b 없는 시간 정규식 → 09:0018:00 같이 붙어있어도 정확히 추출
-  const TIME_RE = /([01]?\d|2[0-3]):([0-5]\d)/g;
-
-  const data=getPayData(worker.id,year,month);
+  // ── 날짜 행 파싱 (2단계: 날짜 → 시간)
+  const DATE_SIMPLE = /(\d{4})\s*[.\s]\s*(\d{1,2})\s*[.\s]\s*(\d{1,2})\s*(일|월|화|수|목|금|토)\s*(휴일)?/;
+  const TIME_FIND   = /\b([01]?\d|2[0-3])\s*:\s*([0-5]\d)\b/g;
+  const data = getPayData(worker.id, year, month);
   let imported=0, skipped=0;
 
   for(const line of lines){
-    const dm=DATE_RE.exec(line);
+    const dm = DATE_SIMPLE.exec(line);
     if(!dm) continue;
-    const y2=parseInt(dm[1]),mo=parseInt(dm[2]),d=parseInt(dm[3]);
-    if(y2!==year||mo!==month) continue;
+    const y2=parseInt(dm[1]), mo=parseInt(dm[2]), d=parseInt(dm[3]);
+    if(y2!==year || mo!==month) continue;
+    const holKW = dm[5];
 
-    // 날짜 이후 텍스트에서만 시간 추출
-    const afterDate=line.slice(dm.index+dm[0].length);
-    TIME_RE.lastIndex=0;
+    // 날짜 패턴 이후 텍스트에서만 시간 검색 (잘못된 숫자 오인식 방지)
+    const lineAfterDate=line.slice(dm.index+dm[0].length);
+    TIME_FIND.lastIndex=0;
     const times=[];
     let tm;
-    while((tm=TIME_RE.exec(afterDate))!==null){
+    while((tm=TIME_FIND.exec(lineAfterDate))!==null){
       times.push(String(parseInt(tm[1])).padStart(2,'0')+':'+tm[2]);
     }
+    const start = times[0]||'';
+    const end   = times[1]||'';
+    if(!start){ skipped++; continue; }
 
-    // 첫 두 시간 = 근무계획(시작, 종료), 이후 = 서버 기록(무시)
-    const start=times[0]||'';
-    const end=times[1]||'';
-    if(!start){skipped++;continue;}
-
-    const toMin=t=>parseInt(t.split(':')[0])*60+parseInt(t.split(':')[1]);
-    const nextDay=!!(start&&end&&toMin(end)<=toMin(start));
-    const isWE=new Date(year,month-1,d).getDay();
-    const isHol=line.includes('휴일')&&!(isWE===0||isWE===6);
+    const toMin = t=>parseInt(t.split(':')[0])*60+parseInt(t.split(':')[1]);
+    const nextDay = !!(start&&end&&toMin(end)<=toMin(start));
+    const isWE = new Date(year,month-1,d).getDay();
+    const isHol = !!holKW && !(isWE===0||isWE===6);
 
     if(!data[d]) data[d]={};
     data[d].start=start; data[d].end=end;
@@ -2776,6 +1846,7 @@ function parsePdfAttendanceText(text, silent=false){
     imported++;
   }
 
+  // 연도/월 셀렉트 동기화 (단일 파일 모드일 때만)
   if(!silent){
     const ySel=document.getElementById('pay-year');
     const mSel=document.getElementById('pay-month');
@@ -2786,16 +1857,16 @@ function parsePdfAttendanceText(text, silent=false){
     }
     if(mSel){for(const o of mSel.options){if(parseInt(o.value)===month){mSel.value=o.value;break;}}}
     lsSaveAll();
-    renderPayList();
     openDetail(worker.id);
   }
 
-  const msg=`${worker.name.trim()} ${year}년 ${month}월 — ${imported}일 입력 완료`+
-    (skipped?` (비근무 ${skipped}건 제외)`:'')+
-    (imported===0?'\n\n⚠ 날짜/시간 패턴 인식 실패. 텍스트 확인 필요.':'');
-  if(!silent) showAttResult(imported>0?'ok':'error',(imported>0?'✅ ':'❌ ')+msg);
-  return {ok:imported>0,msg};
+  const msg = `${worker.name.trim()} ${year}년 ${month}월 — ${imported}일`+(skipped?` (비근무 ${skipped}일 제외)`:'');
+  if(!silent) showAttResult('ok','✅ '+msg);
+  return {ok:true, msg};
 }
+// ─────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────
 
 
 function importAttendance(input){
@@ -2808,125 +1879,106 @@ function importAttendance(input){
       const ws=wb.Sheets[wb.SheetNames[0]];
       if(!ws){showAttResult('error','시트를 읽을 수 없습니다');return;}
 
-      // ── 셀 값 헬퍼 ─────────────────────────────────────────
-      const cv=addr=>ws[addr]||null;
-      const gN=addr=>{
-        const c=cv(addr); if(!c||c.t==='e') return null;
-        if(c.t==='n') return (c.v===null||c.v===undefined)?null:c.v;
+      // ── 셀 값 추출 헬퍼 ──────────────────────────────────
+      const cv = addr => ws[addr] || null;
+
+      // 숫자 반환 (에러셀/빈셀 → null, 문자열 → 숫자변환 시도)
+      const gN = addr => {
+        const c=cv(addr); if(!c) return null;
+        if(c.t==='e') return null;
+        if(c.t==='n') return (c.v===null||c.v===undefined) ? null : c.v;
         const n=parseFloat(c.v); return isNaN(n)?null:n;
       };
-      const gS=addr=>{
+
+      // 문자열 반환 (에러셀/빈셀 → '')
+      const gS = addr => {
         const c=cv(addr); if(!c||c.t==='e') return '';
         const v=c.v; if(v===null||v===undefined) return '';
         return String(v).trim();
       };
 
-      // HHMM 정수(900→09:00) 또는 엑셀 시간 분수(0.7708→18:30) → "HH:MM"
-      const hhmm=n=>{
+      // HHMM 정수 → "HH:MM" (예: 1400 → "14:00")
+      const hhmm = n => {
         if(n===null||n===undefined) return '';
-        const flt=Number(n); if(isNaN(flt)) return '';
-        if(flt>0&&flt<1){ // 엑셀 시간 분수
-          const tot=Math.round(flt*24*60);
-          const h=Math.floor(tot/60),m=tot%60;
-          return h>23||m>59?'':`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-        }
-        const v=Math.round(flt);
-        if(v<100||v>2359) return '';
-        const h=Math.floor(v/100),m=v%100;
-        return h>23||m>59?'':`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+        const v=Math.round(Number(n));
+        if(isNaN(v)||v<100||v>2359) return '';
+        const h=Math.floor(v/100), m=v%100;
+        if(h>23||m>59) return '';
+        return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
       };
 
       // 엑셀 날짜 시리얼 → {y,m,d}
-      const sd2date=s=>{
+      const sd2date = s => {
         if(!s||s<40000) return null;
         const d=new Date(Math.round((s-25569)*86400*1000));
         return isNaN(d.getTime())?null:{y:d.getUTCFullYear(),m:d.getUTCMonth()+1,d:d.getUTCDate()};
       };
 
-      // 비근무 키워드 (I열·N열에 포함되면 해당 날 스킵)
-      const SKIP_KW=['연차','휴가','야퇴','결근','공가','외출','훈련','교육'];
-      const isSkip=str=>SKIP_KW.some(k=>str.includes(k));
+      // ── 연도·월 읽기 ──────────────────────────────────────
+      const year  = parseInt(gN('P4')||gS('P4'))||0;
+      const month = parseInt(gN('P5')||gS('P5'))||0;
+      if(!year||!month){showAttResult('error',`연도/월을 찾을 수 없습니다\nP4=${gS('P4')} P5=${gS('P5')}`);return;}
 
-      // ── 연도·월 ─────────────────────────────────────────────
-      const year=parseInt(gN('P4')||gS('P4'))||0;
-      const month=parseInt(gN('P5')||gS('P5'))||0;
-      if(!year||!month){showAttResult('error',`연도/월 없음 (P4=${gS('P4')}, P5=${gS('P5')})`);return;}
+      // ── 이름 읽기 (D5 우선, C5 대안) ─────────────────────
+      const nameRaw = gS('D5')||gS('C5');
+      const nameParsed = nameRaw.includes('/')? nameRaw.split('/').pop().trim() : nameRaw;
+      if(!nameParsed){showAttResult('error',`성명을 찾을 수 없습니다 (D5="${gS('D5')}")`);return;}
 
-      // ── 이름 (D5: "부서 / 이름" 형식) ─────────────────────
-      const nameRaw=gS('D5')||gS('C5');
-      const nameParsed=nameRaw.includes('/')?nameRaw.split('/').pop().trim():nameRaw.trim();
-      if(!nameParsed){showAttResult('error',`성명 없음 (D5="${gS('D5')}")`);return;}
-      const worker=workers.find(w=>w.name.trim().replace(/\s/g,'')===nameParsed.replace(/\s/g,''));
-      if(!worker){showAttResult('error',`"${nameParsed}" 직원 없음`);return;}
+      const worker = workers.find(w=>
+        w.name.trim().replace(/\s/g,'') === nameParsed.replace(/\s/g,'')
+      );
+      if(!worker){showAttResult('error',`"${nameParsed}" — 직원 목록에 없습니다`);return;}
 
-      // ── 해당 월 기존 데이터 클리어 (메타 _absent 등은 유지) ─
-      const payKey=`${worker.id}_${year}_${String(month).padStart(2,'0')}`;
-      const prevMeta={};
-      if(payrollData[payKey]){
-        Object.keys(payrollData[payKey]).forEach(k=>{
-          if(k.startsWith('_')) prevMeta[k]=payrollData[payKey][k];
-        });
-      }
-      payrollData[payKey]=prevMeta; // 근태 데이터만 초기화
-
-      const data=getPayData(worker.id,year,month);
+      const data = getPayData(worker.id, year, month);
       let imported=0, skipped=0;
 
-      // ── 날짜 행 루프 (10~45) ────────────────────────────────
-      for(let row=10;row<=45;row++){
-        const bN=gN('B'+row);
-        if(!bN||bN<40000) continue;
-        const dt=sd2date(bN);
+      // ── 날짜 행 루프 ──────────────────────────────────────
+      for(let row=10; row<=45; row++){
+        // 날짜 시리얼 (B열 우선, C열 대안)
+        const bN=gN('B'+row), cN=gN('C'+row);
+        const serial=(bN&&bN>40000)?bN:(cN&&cN>40000)?cN:null;
+        if(!serial) continue;
+        const dt=sd2date(serial);
         if(!dt||dt.y!==year||dt.m!==month) continue;
-        const d=dt.d;
 
-        // I열(내용) 또는 N열에 비근무 키워드 → 먼저 스킵
-        const iStr=gS('I'+row), nStr=gS('N'+row);
-        if(isSkip(iStr)||isSkip(nStr)){skipped++;continue;}
+        // 출근시간: P열(출근시각) 우선, D열(시업시간) 대안
+        const pN=gN('P'+row), dN=gN('D'+row);
+        if(pN===0){skipped++;continue;}          // P=0 → 결근/휴가
+        const start = hhmm(pN) || hhmm(dN);
+        if(!start){skipped++;continue;}           // 근무 없음
 
-        // P열: 실제 출근시각
-        // ★ P가 #ERR(수식오류)이거나 0이면 D열로 폴백
-        const pCell=cv('P'+row);
-        const pIsErr = pCell && pCell.t==='e';  // 수식 오류 여부
-        const pN = pIsErr ? null : gN('P'+row);
-        if(pN===0 && !pIsErr){skipped++;continue;} // P=0 이면 비근무
-
-        // 시작 시간: P열 우선 → D열(계획) 폴백
-        const dN=gN('D'+row);
-        const start=hhmm(pN)||hhmm(dN);
-        if(!start){skipped++;continue;}
-
-        // 종료 시간: E열
+        // 퇴근시간: E열
+        const eC = cv('E'+row);
         let end='', nextDay=false;
-        const eCell=cv('E'+row);
-        if(eCell&&eCell.v!==null&&eCell.v!==undefined){
-          if(eCell.t==='s'||eCell.t==='str'){
-            const eStr=String(eCell.v).trim();
-            const hasNext=eStr.includes('익일')||eStr.includes('D+')||eStr.includes('d+');
-            const tm=eStr.match(/(\d{1,2}):(\d{2})/);
-            if(tm){end=`${String(parseInt(tm[1])).padStart(2,'0')}:${tm[2]}`;if(hasNext)nextDay=true;}
+        if(eC && eC.v!==null && eC.v!==undefined){
+          if(eC.t==='n' && Number(eC.v)>=100){
+            end = hhmm(Number(eC.v));
           } else {
-            end=hhmm(Number(eCell.v));
+            const es = String(eC.v);
+            const hasNext = es.includes('익일')||es.includes('D+')||es.includes('d+');
+            const tm = es.match(/(\d{1,2}):(\d{2})/);
+            if(tm){
+              end = String(parseInt(tm[1])).padStart(2,'0')+':'+tm[2];
+              if(hasNext) nextDay=true;
+            } else {
+              const en=parseFloat(es);
+              if(!isNaN(en)&&en>=100) end=hhmm(en);
+            }
           }
         }
 
-        // ★ 퇴근 없으면 저장하지 않음 (출근만 있는 오입력 방지)
-        if(!end){skipped++;continue;}
+        // 휴일 여부 (O열)
+        const oStr = gS('O'+row);
+        const isHol = oStr.includes('휴');
+        const dow = new Date(year,month-1,dt.d).getDay();
 
-        // 야간 여부
-        if(!nextDay){
-          const toMin=t=>parseInt(t.split(':')[0])*60+parseInt(t.split(':')[1]);
-          if(toMin(end)<=toMin(start)) nextDay=true;
-        }
-
-        // 휴일 여부
-        const oStr=gS('O'+row);
-        const dow=new Date(year,month-1,d).getDay();
-        const isHol=(oStr==='휴일')&&!(dow===0||dow===6);
-
-        if(!data[d]) data[d]={};
-        data[d].start=start; data[d].end=end; data[d].holiday=isHol;
-        if(nextDay) data[d].nextDay=true; else delete data[d].nextDay;
+        // 저장
+        if(!data[dt.d]) data[dt.d]={};
+        data[dt.d].start   = start;
+        data[dt.d].end     = end||'';
+        data[dt.d].holiday = isHol&&dow!==0&&dow!==6;
+        if(nextDay) data[dt.d].nextDay=true;
+        else        delete data[dt.d].nextDay;
         imported++;
       }
 
@@ -2940,11 +1992,11 @@ function importAttendance(input){
       }
       if(mSel) for(const o of mSel.options){if(parseInt(o.value)===month){mSel.value=o.value;break;}}
 
-      lsSaveAll(); renderPayList(); openDetail(worker.id);
+      lsSaveAll();
+      openDetail(worker.id);
       showAttResult('ok',
         `✅ ${nameParsed} ${year}년 ${month}월 — ${imported}일 업로드 완료`+
-        (skipped?` (비근무·휴가 ${skipped}일 제외)`:'')+
-        `\n기존 데이터는 초기화 후 새로 입력됐습니다.`
+        (skipped?` (결근/휴가 ${skipped}일 제외)`:'')
       );
     }catch(err){
       showAttResult('error','파일 읽기 실패: '+err.message);
@@ -2953,6 +2005,7 @@ function importAttendance(input){
   };
   reader.readAsArrayBuffer(file);
 }
+
 
 function showAttResult(type,msg){
   const el=document.getElementById('att-result');if(!el)return;
@@ -2999,22 +2052,30 @@ function clearMonthData(id,year,month){
   const cnt=Object.keys(data).filter(k=>!k.startsWith('_')).length;
   if(cnt===0){showSaveToast('삭제할 데이터가 없습니다','info');return;}
   if(!confirm(w.name+' '+year+'년 '+month+'월 근태 데이터 '+cnt+'일을 모두 삭제하시겠습니까?')) return;
-
-  // 메타(_absent 등)만 유지, 근태 데이터 전체 초기화
-  const k=getPayKey(id,year,month);
+  const k=id+'_'+year+'_'+month;
+  // 메타 데이터(_absent 등)는 유지, 근태 데이터만 삭제
   const kept={};
-  if(payrollData[k]) Object.keys(payrollData[k]).forEach(key=>{
-    if(key.startsWith('_')) kept[key]=payrollData[k][key];
-  });
+  if(payrollData[k]) Object.keys(payrollData[k]).forEach(key=>{if(key.startsWith('_')) kept[key]=payrollData[k][key];});
   payrollData[k]=kept;
   lsSaveAll();
-
-  // 상세 화면 전체 재렌더 (가장 확실한 방법)
-  const inner=document.getElementById('pay-detail-inner');
-  if(inner) inner.innerHTML=buildDailyDetail(id,year,month);
-
-  // 목록 카드도 즉시 갱신
-  renderPayList();
+  // 테이블 행 즉시 초기화
+  const days=getDaysInMonth(year,month);
+  for(let d=1;d<=days;d++){
+    const sEl=document.getElementById('inp-s-'+d);
+    const eEl=document.getElementById('inp-e-'+d);
+    const ndEl=document.getElementById('inp-nd-'+d);
+    if(sEl){sEl.value='';sEl.style.borderColor='#e0e0e0';sEl.style.background='#fafaf8';sEl.style.fontWeight='400';}
+    if(eEl){eEl.value='';eEl.style.borderColor='#e0e0e0';eEl.style.background='#fafaf8';eEl.style.fontWeight='400';}
+    if(ndEl) ndEl.checked=false;
+    const rowEl=document.getElementById('row-work-'+d);
+    const payEl=document.getElementById('row-pay-'+d);
+    if(rowEl) rowEl.innerHTML='<span style="color:#ddd;font-size:12px">—</span>';
+    if(payEl) payEl.innerHTML='<span style="color:#e0e0e0;font-size:13px">—</span>';
+    const chkEl=document.querySelector('[data-day-chk="'+d+'"]');
+    const dow=getDow(year,month,d);
+    if(chkEl&&!(dow===0||dow===6)) chkEl.checked=false;
+  }
+  refreshDetailSummary(id,year,month);
   showSaveToast(w.name+' '+month+'월 전체 삭제됨','save');
 }
 function clearDayData(id,year,month,day){
@@ -3185,12 +2246,12 @@ function saveDayData(id,year,month,day,field,val){
   if(!data[day]) data[day]={};
   if(field==='holiday'||field==='nextDay') data[day][field]=!!val;
   else data[day][field]=val;
-  // 즉시 합계 갱신 (입력 필드 blur/change 모두 대응)
+  // 포커스 이동이 완료된 후 UI 갱신 (클릭 충돌 방지)
   clearTimeout(saveDayData._r);
-  saveDayData._r=setTimeout(()=>refreshDetailSummary(id,year,month), 80);
-  if(field==='start'||field==='end') showSaveToast('저장됨','save');
+  saveDayData._r=setTimeout(()=>refreshDetailSummary(id,year,month), 150);
+  if(field==='start'||field==='end') showSaveToast('실시간 저장됨','save');
   clearTimeout(saveDayData._t);
-  saveDayData._t=setTimeout(lsSaveAll,400);
+  saveDayData._t=setTimeout(lsSaveAll,500);
 }
 
 function showSaveToast(msg, type){
@@ -3267,42 +2328,6 @@ function refreshDetailSummary(id,year,month){
         </div>`:''
     ).filter(Boolean).join('')||'<span style="font-size:11px;color:#ccc">Âdc¬04외 Åc6음</span>';
   }
-  // ── 합계 행 즉시 갱신 ─────────────────────────────────────────
-  const _sumW=document.getElementById('sum-work-h');
-  const _sumOth=document.getElementById('sum-oth');
-  const _sumOt4el=document.getElementById('sum-ot4badges');
-  const _sumPay=document.getElementById('sum-pay-cell');
-  const _sumOver=document.getElementById('sum-over-badge');
-  if(_sumW||_sumOth){
-    const _sdData=getPayData(id,year,month);
-    const _sdDays=getDaysInMonth(year,month);
-    let _sw=0,_soth=0,_sot4=[0,0,0,0],_spay=0;
-    const _wSum=workers.find(x=>x.id===id);
-    const _wgSum=getWage(year,getWageGroup(_wSum));
-    const _bhSum=billHourlyPreTax(_wgSum.base);
-    for(let _sd=1;_sd<=_sdDays;_sd++){
-      const _sdd=_sdData[_sd]||{};
-      const _sdw=getDow(year,month,_sd);
-      const _sih=!!(_sdd.holiday)||(_sdw===0||_sdw===6);
-      const _sot=calcDayOT({..._sdd,holiday:_sih});
-      _sw+=_sot.totalWork||0;
-      const _sh1=_sot.ot1+_sot.ot4,_sh2=_sot.ot2+_sot.ot5,_sh3=_sot.ot3+_sot.ot6,_shn=_sot.nightH||0;
-      _sot4[0]+=_sh1;_sot4[1]+=_sh2;_sot4[2]+=_sh3;_sot4[3]+=_shn;
-      _soth+=_sh1+_sh2+_sh3+_shn;
-      _spay+=Math.round((_sh1*1.5+_sh2*1.5+_sh3*2.0+_shn*0.5)*_bhSum*1.1);
-    }
-    _sot4=_sot4.map(h=>Math.round(h*10)/10);
-    _sw=Math.round(_sw*10)/10; _soth=Math.round(_soth*10)/10;
-    const OT4BG2=['#E6F1FB','#E6F1FB','#EEEDFE','#1a1a2e'];
-    const OT4COL2=['#185FA5','#185FA5','#534AB7','#a0a0e0'];
-    const OT4LBL2=['평일연장','휴일근로','휴일연장','야간근로'];
-    if(_sumW){_sumW.textContent=_sw.toFixed(1)+'h';_sumW.style.color=_sw>STD_HOURS?'#A32D2D':'#333';}
-    if(_sumOth) _sumOth.textContent='시간외 '+_soth.toFixed(1)+'h';
-    if(_sumOver) _sumOver.innerHTML=_sw>STD_HOURS?'<span style="font-size:11px;background:#FCEBEB;color:#A32D2D;padding:2px 8px;border-radius:4px;font-weight:500">208h 초과</span>':'';
-    if(_sumOt4el) _sumOt4el.innerHTML=_sot4.map((h,i)=>h>0?`<span style="background:${OT4BG2[i]};color:${OT4COL2[i]};padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500">${OT4LBL2[i]} ${h.toFixed(1)}h</span>`:'').join('');
-    if(_sumPay) _sumPay.innerHTML=`<span style="font-size:14px;font-weight:700;color:#854F0B">${KR(_spay)}</span><span style="font-size:10px;color:#aaa;margin-left:2px">원</span>`;
-  }
-
   // 행별 재계산
   const w=workers.find(x=>x.id===id);if(!w)return;
   const wage=getWage(year,getWageGroup(w));
@@ -3509,7 +2534,7 @@ function printInvoice(){
   const month=parseInt(document.getElementById('inv-month')?.value)||new Date().getMonth()+1;
   const agency=document.getElementById('inv-agency')?.value||'';
   const mDays=getDaysInMonth(year,month);
-  const INDIRECT=0.117264;
+  const INDIRECT=0.117263;
   const KR=n=>Math.round(n).toLocaleString('ko-KR');
   const FH=h=>h>0?h.toFixed(1):'';
 
@@ -3561,7 +2586,7 @@ function printInvoice(){
       const R=K+M+O+Q;
       const U=Math.round(R*INDIRECT), V=Math.round(R/12*10)/10;
       const W=Math.round(I_v+R+U+V);
-      const X=Math.round((h1+h2+h3)*10)/10; // 야간근로 제외 (연장과 중복)
+      const X=Math.round((h1+h2+h3+nh)*10)/10;
       const isEnd=w.status==='계약종료';
 
       rows+=`<tr class="${isEnd?'ended':i%2===1?'alt':''}">
@@ -3631,7 +2656,7 @@ function printInvoice(){
         <th rowspan="3" style="background:${group.th}">소 계<br>(VAT포함)</th>
         <th rowspan="3" style="background:${group.th}">지급<br>기준</th>
         <th rowspan="3" style="background:${group.th}">실지급액</th>
-        <th rowspan="3" style="background:${group.th}">간접비<br>(11.7264%)</th>
+        <th rowspan="3" style="background:${group.th}">간접비<br>(11.73%)</th>
         <th rowspan="3" style="background:${group.th}">퇴직<br>충당금</th>
         <th rowspan="3" style="background:${group.ot1c};font-size:10px">합 계<br>(VAT포함)</th>
         <th rowspan="3" style="background:${group.th}">시간<br>합계</th>
@@ -3785,7 +2810,7 @@ function downloadInvoiceExcel(){
   const mDays=getDaysInMonth(year,month);
 
   // ── 상수 ──────────────────────────────────────────────────
-  const INDIRECT = 0.117264;  // 간접비율 11.7264%
+  const INDIRECT = 0.117263;  // 간접비율 (4대보험 사용자+관리비)
 
   // ── 부서 그룹 ──────────────────────────────────────────────
   const GROUPS=[
@@ -4299,334 +3324,3 @@ initSelects();
 renderSummary();
 renderTable();
 </script>
-<!-- 데이터 관리 모달 -->
-<div class="modal-bg" id="modal-data" style="display:none">
-  <div class="modal" style="max-width:520px">
-    <h3 style="margin-bottom:0.4rem">💾 데이터 관리</h3>
-    <p style="font-size:12px;color:#888;margin-bottom:1.2rem">데이터는 이 기기의 브라우저에 자동 저장됩니다. 여러 기기에서 사용하려면 백업 파일을 공유하세요.</p>
-
-    <!-- 저장 상태 -->
-    <div id="dm-status" style="background:#f5f5f3;border-radius:10px;padding:12px 14px;margin-bottom:1.2rem;display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <div style="font-size:12px;font-weight:500;color:#555">마지막 자동저장</div>
-        <div style="font-size:11px;color:#888;margin-top:2px" id="dm-last-save">저장 정보 없음</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-size:11px;color:#888" id="dm-counts"></div>
-      </div>
-    </div>
-
-    <!-- 백업/복원 -->
-    <div style="background:#fff;border:1px solid #eee;border-radius:10px;padding:14px;margin-bottom:1rem">
-      <div style="font-size:13px;font-weight:600;margin-bottom:10px">📁 백업 / 복원</div>
-      <div style="display:flex;gap:8px">
-        <button onclick="exportDataJSON()" style="flex:1;padding:10px;background:#EAF3DE;color:#3B6D11;border:1px solid #C0DD97;border-radius:8px;font-size:12px;cursor:pointer;font-weight:500">
-          ⬇ JSON 백업 다운로드
-        </button>
-        <label style="flex:1;padding:10px;background:#E1F5EE;color:#0F6E56;border:1px solid #9FE1CB;border-radius:8px;font-size:12px;cursor:pointer;font-weight:500;text-align:center;display:block">
-          ⬆ JSON 백업 가져오기
-          <input type="file" accept=".json" style="display:none" onchange="importDataJSON(this)">
-        </label>
-      </div>
-      <p style="font-size:11px;color:#aaa;margin-top:8px;line-height:1.6">
-        JSON 파일을 카카오톡, 메일, 공유 드라이브로 전달하면 다른 사람도 동일한 데이터를 사용할 수 있습니다.
-      </p>
-    </div>
-
-    <!-- 클라우드 공유 -->
-    <div style="background:#E6F1FB;border:1.5px solid #B5D4F4;border-radius:12px;padding:16px;margin-bottom:1rem">
-      <div style="font-size:14px;font-weight:600;color:#0C447C;margin-bottom:4px">☁ 여러 명이 함께 쓰기</div>
-      <div style="font-size:11px;color:#378ADD;margin-bottom:12px">Google Apps Script 이용 · 완전 무료 · 60초마다 자동 동기화</div>
-
-      <!-- URL 입력 (항상 표시) -->
-      <div style="background:#fff;border-radius:8px;padding:12px;margin-bottom:8px">
-        <div style="font-size:11px;color:#888;font-weight:600;margin-bottom:5px">웹 앱 URL <span id="gas-conn-badge" style="display:none;background:#0F6E56;color:#fff;padding:1px 8px;border-radius:10px;font-size:10px">연결됨 🟢</span></div>
-        <div style="display:flex;gap:6px">
-          <input id="gas-url-input" type="text"
-            placeholder="https://script.google.com/macros/s/.../exec"
-            style="flex:1;padding:8px 10px;border:1.5px solid #B5D4F4;border-radius:7px;font-size:12px">
-          <button onclick="saveGasUrl()"
-            style="padding:8px 16px;background:#185FA5;color:#fff;border:none;border-radius:7px;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap">
-            🔗 연결
-          </button>
-        </div>
-        <div style="font-size:10px;color:#aaa;margin-top:4px">URL 없으면 아래 📋 코드 복사 후 설정하세요</div>
-      </div>
-
-      <!-- 업로드/다운로드 (연결 후) -->
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <button onclick="cloudUpload()"
-          style="flex:1;padding:9px;background:#185FA5;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600">
-          ① 업로드
-        </button>
-        <button onclick="cloudDownload()"
-          style="flex:1;padding:9px;background:#fff;color:#185FA5;border:1px solid #B5D4F4;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600">
-          ② 가져오기
-        </button>
-        <button onclick="navigator.clipboard.writeText(document.getElementById('gas-url-input').value);alert('URL이 복사됐습니다! 동료에게 공유하세요.');"
-          style="padding:9px 12px;background:#fff;color:#185FA5;border:1px solid #B5D4F4;border-radius:8px;font-size:11px;cursor:pointer">
-          URL 복사
-        </button>
-      </div>
-
-      <!-- Apps Script 코드 영역 (접기/펼치기) -->
-      <div style="background:#fff;border-radius:8px;padding:10px">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-size:11px;color:#888">처음이라면: Apps Script 코드를 복사해서 설정하세요</span>
-          <button onclick="
-            const box=document.getElementById('gas-code-box');
-            box.style.display=box.style.display==='none'?'block':'none';
-            this.textContent=box.style.display==='none'?'▼ 코드 보기':'▲ 접기';"
-            style="padding:3px 10px;background:none;border:1px solid #B5D4F4;border-radius:6px;font-size:11px;cursor:pointer;color:#185FA5">▼ 코드 보기</button>
-        </div>
-        <div id="gas-code-box" style="display:none;margin-top:8px">
-          <div style="text-align:right;margin-bottom:5px">
-            <button onclick="navigator.clipboard.writeText(document.getElementById('gas-code').textContent.trim());this.textContent='✓ 복사됨';setTimeout(()=>this.textContent='📋 코드 복사',2000);"
-              style="padding:4px 12px;background:#185FA5;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600">📋 코드 복사</button>
-          </div>
-          <pre id="gas-code" style="background:#1e1e2e;color:#cdd6f4;padding:10px;border-radius:7px;font-size:10px;overflow:auto;height:100px;margin:0;white-space:pre">const FILE_NAME = 'KBS_파견인력_데이터.json';
-
-function getDataFile() {
-  const files = DriveApp.getFilesByName(FILE_NAME);
-  return files.hasNext() ? files.next()
-    : DriveApp.createFile(FILE_NAME, '{}', MimeType.PLAIN_TEXT);
-}
-
-function doPost(e) {
-  try {
-    let data;
-    // form-encoded 방식: e.parameter.d
-    if (e.parameter && e.parameter.d) {
-      data = JSON.parse(e.parameter.d);
-    }
-    // text/plain 방식: e.postData.contents
-    else if (e.postData && e.postData.contents) {
-      const body = JSON.parse(e.postData.contents);
-      data = body.data || body;
-    }
-    if (!data) throw new Error('데이터 없음');
-    getDataFile().setContent(JSON.stringify(data));
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: true }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: false, msg: err.message }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function doGet(e) {
-  try {
-    const files = DriveApp.getFilesByName(FILE_NAME);
-    if (!files.hasNext()) return ContentService
-      .createTextOutput(JSON.stringify({ ok: true, data: null }))
-      .setMimeType(ContentService.MimeType.JSON);
-    const raw = files.next().getBlob().getDataAsString();
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: true, data: JSON.parse(raw) }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: false, msg: err.message }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}</pre>
-        </div>
-      </div>
-
-      <div id="cloud-status" style="margin-top:8px;font-size:11px;min-height:16px;color:#185FA5"></div>
-    </div>
-
-    <!-- 위험 구역    <!-- 위험 구역    <!-- 위험 구역 -->
-    <div style="background:#FFF8F0;border:1px solid #FAEEDA;border-radius:10px;padding:14px">
-      <div style="font-size:13px;font-weight:600;color:#854F0B;margin-bottom:8px">⚠ 데이터 초기화</div>
-      <button onclick="resetAllData()" style="padding:9px 18px;background:none;border:1px solid #F7C1C1;border-radius:8px;font-size:12px;cursor:pointer;color:#A32D2D;font-weight:500">
-        저장된 데이터 모두 삭제 (초기 상태로)
-      </button>
-      <p style="font-size:11px;color:#aaa;margin-top:6px">삭제 전 반드시 JSON 백업을 다운로드 하세요.</p>
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn-cancel" onclick="document.getElementById('modal-data').style.display='none'">닫기</button>
-    </div>
-  </div>
-</div>
-
-
-
-
-
-    <!-- 단계별 안내 -->
-    <div style="background:#F0F7FF;border-radius:10px;padding:14px;margin-bottom:16px;font-size:12px;line-height:2;color:#333">
-      <div style="font-weight:600;color:#185FA5;margin-bottom:4px">📋 최초 1회 설정 (5분 소요)</div>
-      <div>① <a href="https://script.google.com" target="_blank" style="color:#1a73e8;font-weight:600">script.google.com</a> 접속 → <b>새 프로젝트</b></div>
-      <div>② 편집기 코드를 전부 지우고 아래 코드 붙여넣기 (스프레드시트 불필요)</div>
-      <div>③ 💾 저장 → 🚀 <b>배포 → 새 배포</b> 클릭</div>
-      <div>④ 유형: <b>웹 앱</b> / 액세스: <b>모든 사용자</b> → 배포</div>
-      <div>⑤ 생성된 <b>웹 앱 URL</b> 복사 → 아래 붙여넣기</div>
-    </div>
-
-    <!-- 복사할 코드 -->
-    <div style="margin-bottom:14px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-        <label style="font-size:12px;color:#888;font-weight:600">붙여넣을 Apps Script 코드</label>
-        <button onclick="
-          navigator.clipboard.writeText(document.getElementById('gas-code').textContent);
-          this.textContent='✓ 복사됨';setTimeout(()=>this.textContent='📋 복사',1500);"
-          style="padding:4px 12px;background:#185FA5;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer">📋 복사</button>
-      </div>
-      <pre id="gas-code" style="background:#1a1a2e;color:#a0e4b8;padding:12px;border-radius:8px;font-size:10.5px;overflow-x:auto;white-space:pre;line-height:1.6;max-height:200px;overflow-y:auto">const FILE_NAME = 'KBS_파견인력_데이터.json';
-
-function getDataFile() {
-  const files = DriveApp.getFilesByName(FILE_NAME);
-  return files.hasNext() ? files.next()
-    : DriveApp.createFile(FILE_NAME, '{}', MimeType.PLAIN_TEXT);
-}
-
-function doPost(e) {
-  try {
-    let data;
-    // form-encoded 방식: e.parameter.d
-    if (e.parameter && e.parameter.d) {
-      data = JSON.parse(e.parameter.d);
-    }
-    // text/plain 방식: e.postData.contents
-    else if (e.postData && e.postData.contents) {
-      const body = JSON.parse(e.postData.contents);
-      data = body.data || body;
-    }
-    if (!data) throw new Error('데이터 없음');
-    getDataFile().setContent(JSON.stringify(data));
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: true }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: false, msg: err.message }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function doGet(e) {
-  try {
-    const files = DriveApp.getFilesByName(FILE_NAME);
-    if (!files.hasNext()) return ContentService
-      .createTextOutput(JSON.stringify({ ok: true, data: null }))
-      .setMimeType(ContentService.MimeType.JSON);
-    const raw = files.next().getBlob().getDataAsString();
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: true, data: JSON.parse(raw) }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch (err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({ ok: false, msg: err.message }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}</pre>
-    </div>
-
-    <!-- URL 입력 -->
-    <div style="margin-bottom:14px">
-      <label style="font-size:12px;color:#888;font-weight:600;display:block;margin-bottom:6px">⑤ 웹 앱 URL 붙여넣기</label>
-      <input id="gas-url-input" type="text" placeholder="https://script.google.com/macros/s/..."
-        style="width:100%;padding:10px 12px;border:1.5px solid #185FA5;border-radius:8px;font-size:12px;box-sizing:border-box">
-    </div>
-
-<!-- Google Apps Script 공유 설정 모달 -->
-<!-- 파견업체 담당자 편집 모달 --><!-- 파견업체 담당자 편집 모달 --><!-- 파견업체 담당자 편집 모달 --><!-- 파견업체 담당자 편집 모달 -->
-<div class="modal-bg" id="modal-agency-edit" style="display:none">
-  <div class="modal" style="max-width:420px">
-    <h3 id="ag-edit-title" style="font-size:16px;font-weight:700;margin-bottom:20px">업체 담당자 정보</h3>
-    <input type="hidden" id="ag-edit-agency">
-    <div style="display:flex;flex-direction:column;gap:14px">
-      <!-- 신규 등록 시에만 표시 -->
-      <div id="ag-new-name-row" style="display:none;flex-direction:column;gap:5px">
-        <label style="font-size:11px;color:#185FA5;font-weight:600">업체명 <span style="color:#A32D2D">*</span></label>
-        <input id="ag-new-name" type="text" placeholder="예) 신규파견업체"
-          style="padding:9px 12px;border:1.5px solid #185FA5;border-radius:8px;font-size:14px">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:5px">
-        <label style="font-size:11px;color:#888;font-weight:500">담당자 성명</label>
-        <input id="ag-edit-name" type="text" placeholder="예) 홍길동"
-          style="padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:5px">
-        <label style="font-size:11px;color:#888;font-weight:500">연락처</label>
-        <input id="ag-edit-phone" type="tel" placeholder="예) 010-1234-5678"
-          style="padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
-      </div>
-      <div style="display:flex;flex-direction:column;gap:5px">
-        <label style="font-size:11px;color:#888;font-weight:500">이메일</label>
-        <input id="ag-edit-email" type="email" placeholder="예) hong@company.com"
-          style="padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px">
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:22px">
-      <button onclick="document.getElementById('modal-agency-edit').style.display='none'"
-        style="flex:1;padding:10px;background:none;border:1px solid #ddd;border-radius:8px;font-size:13px;cursor:pointer;color:#666">취소</button>
-      <button onclick="saveAgencyContact()"
-        style="flex:1;padding:10px;background:#185FA5;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">저장</button>
-    </div>
-  </div>
-</div>
-
-<!-- 청구내역서 모달 -->
-<div id="modal-invoice" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;padding:20px">
-  <div style="background:#fff;border-radius:14px;padding:1.5rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
-      <h3 style="font-size:16px;font-weight:600">🖨 청구내역서 출력 설정</h3>
-      <button onclick="document.getElementById('modal-invoice').style.display='none'"
-        style="width:28px;height:28px;border-radius:50%;border:1px solid #eee;background:#f5f5f3;cursor:pointer;font-size:14px;color:#888">✕</button>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.2rem">
-      <div style="display:flex;flex-direction:column;gap:5px">
-        <label style="font-size:11px;color:#888;font-weight:500">연도</label>
-        <select id="inv-year" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px"></select>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:5px">
-        <label style="font-size:11px;color:#888;font-weight:500">월</label>
-        <select id="inv-month" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px"></select>
-      </div>
-      <div style="grid-column:1/-1;display:flex;flex-direction:column;gap:5px">
-        <label style="font-size:11px;color:#888;font-weight:500">파견업체</label>
-        <select id="inv-agency" style="padding:8px;border:1px solid #ddd;border-radius:8px;font-size:13px">
-          <option value="">전체 업체</option>
-        </select>
-      </div>
-      <div style="grid-column:1/-1;background:#EEEDFE;border-radius:8px;padding:9px 12px;font-size:11px;color:#534AB7">
-        📋 부서별(영상취재1부·2부·뉴스영상콘텐츠부) 섹션으로 자동 분리 출력됩니다.
-      </div>
-    </div>
-
-    <div id="inv-preview-info" style="background:#f5f5f3;border-radius:8px;padding:10px 14px;font-size:12px;color:#666;margin-bottom:1.2rem">
-      업체를 선택하면 대상 인원이 표시됩니다.
-    </div>
-
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button onclick="document.getElementById('modal-invoice').style.display='none'"
-        style="flex:1;padding:10px;background:none;border:1px solid #ddd;border-radius:8px;font-size:13px;cursor:pointer;color:#666">취소</button>
-      <button onclick="printInvoice()"
-        style="flex:1;padding:10px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">
-        🖨 인쇄
-      </button>
-      <button onclick="downloadInvoiceExcel()"
-        style="flex:1;padding:10px;background:#3B6D11;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">
-        📥 Excel 다운로드
-      </button>
-    </div>
-    <div style="margin-top:8px">
-      <button onclick="sendInvoiceEmail()"
-        style="width:100%;padding:11px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600;display:flex;align-items:center;justify-content:center;gap:6px">
-        ✉ 이메일 발송 (Excel 다운로드 + 메일 작성)
-      </button>
-      <div id="email-send-info" style="font-size:10px;color:#888;text-align:center;margin-top:5px;display:none"></div>
-    </div>
-  </div>
-</div>
-
-</body>
-</html>
-</body>
-</html>

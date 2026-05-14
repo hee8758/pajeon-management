@@ -4,427 +4,191 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KBS 보도영상국 파견인력 관리 시스템</title>
-<meta name="description" content="KBS 보도영상국 파견직 인력 현황 및 파견료 정산 관리 시스템">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#f0f2f7;--surface:#ffffff;--surface2:#f4f6fb;--border:#dde2ee;
-  --accent:#4f46e5;--accent2:#e11d7a;--green:#16a34a;--amber:#d97706;
-  --red:#dc2626;--blue:#2563eb;--purple:#7c3aed;
-  --text:#1e2340;--text2:#4a5272;--text3:#7b85a8;
-  --card-bg:#ffffff;--input-bg:#f8f9fd;
-}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Noto Sans KR',sans-serif;font-size:14px;color:var(--text);background:var(--bg);min-height:100vh}
-body::before{content:'';position:fixed;inset:0;background:linear-gradient(135deg,#eef1ff 0%,#f5f7ff 40%,#fdf4ff 100%);z-index:-1;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;font-size:14px;color:#1a1a1a;background:#f5f5f3;min-height:100vh}
+.app{max-width:100%;margin:0;padding:0.4rem 0.8rem}
+.app-header{display:flex;align-items:center;gap:12px;margin-bottom:0.6rem;padding-bottom:1rem;border-bottom:1px solid #e5e5e0}
+.app-header h1{font-size:18px;font-weight:600;color:#1a1a1a}
+.app-header .subtitle{font-size:12px;color:#888;margin-left:auto}
 
-/* APP SHELL */
-.app{max-width:1400px;margin:0 auto;padding:0 1.5rem 2rem}
+/* 탭 */
+.tabs{display:flex;border-bottom:2px solid #f0d0e8;margin-bottom:0.6rem;gap:2px}
+.tab{padding:10px 22px;font-size:13px;cursor:pointer;border:none;background:none;color:#bbb;border-bottom:3px solid transparent;font-weight:400;transition:all 0.15s;margin-bottom:-2px;border-radius:8px 8px 0 0}
+.tab:hover{color:#C2185B;background:#fff0f6}
+.tab[onclick*="'list'"].active{color:#C2185B;border-bottom:3px solid #C2185B;font-weight:700;background:#fff0f6}
+.tab[onclick*="'history'"].active{color:#AD1457;border-bottom:3px solid #AD1457;font-weight:700;background:#fce4ec}
+.tab[onclick*="'agency'"].active{color:#E91E8C;border-bottom:3px solid #E91E8C;font-weight:700;background:#fce4f0}
+.tab[onclick*="'pay'"].active{color:#8E24AA;border-bottom:3px solid #8E24AA;font-weight:700;background:#f3e5f5}
+.tab[onclick*="'rank'"].active{color:#0F6E56;border-bottom:3px solid #0F6E56;font-weight:700;background:#E1F5EE}
+/* 부서 탭 */
+.dept-tabs{display:flex;gap:6px;margin-bottom:1.2rem;flex-wrap:wrap}
+.dept-tab{padding:6px 18px;font-size:12px;font-weight:500;border-radius:20px;border:2px solid #f0c0d8;background:#fff;color:#bbb;cursor:pointer;transition:all 0.15s}
+.dept-tab:hover{border-color:#E91E8C;color:#E91E8C;background:#fff5fa}
+.dept-tab.active{color:#fff;border-color:transparent;font-weight:600;box-shadow:0 2px 10px rgba(194,24,91,0.3)}
+.dept-tab:not([class*='d']).active{background:#E91E8C}
+.dept-tab.d1.active{background:#C2185B}
+.dept-tab.d2.active{background:#8E24AA}
+.dept-tab.d3.active{background:#D81B60}
 
-/* HEADER */
-.app-header{
-  display:flex;align-items:center;gap:16px;
-  padding:1.2rem 0;margin-bottom:1.5rem;
-  border-bottom:1px solid var(--border);
-  position:sticky;top:0;z-index:50;
-  background:rgba(240,242,247,.92);backdrop-filter:blur(12px);
-}
-.app-header h1{
-  font-size:17px;font-weight:700;letter-spacing:-.3px;
-  background:linear-gradient(135deg,#4f46e5,#a21caf);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-}
-.app-header .subtitle{font-size:11px;color:var(--text3);margin-left:auto}
+/* 요약 카드 */
+.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:0.6rem}
+.scard{background:#fff;border-radius:10px;padding:14px 16px;border:1px solid #eee}
+.scard .lbl{font-size:11px;color:#888;margin-bottom:6px}
+.scard .val{font-size:24px;font-weight:600}
+.val-blue{color:#185FA5}.val-green{color:#3B6D11}.val-amber{color:#854F0B}.val-purple{color:#534AB7}
 
-/* TABS */
-.tabs{display:flex;gap:4px;margin-bottom:1.5rem;padding:4px;
-  background:rgba(255,255,255,.8);border-radius:14px;width:fit-content;
-  box-shadow:0 2px 8px rgba(79,70,229,.08);border:1px solid var(--border)}
-.tab{padding:8px 20px;font-size:13px;cursor:pointer;border:none;background:none;
-  color:var(--text3);border-radius:10px;font-weight:500;transition:all .2s;font-family:inherit}
-.tab:hover{color:var(--accent);background:rgba(79,70,229,.06)}
-.tab.active{background:var(--accent);color:#fff;font-weight:600;
-  box-shadow:0 4px 14px rgba(79,70,229,.3)}
-
-/* DEPT TABS */
-.dept-tabs{display:flex;gap:8px;margin-bottom:1.2rem;flex-wrap:wrap}
-.dept-tab{padding:6px 16px;font-size:12px;font-weight:500;border-radius:20px;
-  border:1.5px solid var(--border);background:transparent;color:var(--text3);
-  cursor:pointer;transition:all .2s}
-.dept-tab:hover{border-color:var(--accent);color:var(--accent)}
-.dept-tab.active{color:#fff;border-color:transparent;font-weight:600}
-.dept-tab:not([class*='d']).active{background:var(--accent)}
-.dept-tab.d1.active{background:linear-gradient(135deg,#6c63ff,#4f46e5)}
-.dept-tab.d2.active{background:linear-gradient(135deg,#a855f7,#7c3aed)}
-.dept-tab.d3.active{background:linear-gradient(135deg,#3b82f6,#2563eb)}
-
-/* SUMMARY CARDS */
-.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:1.5rem}
-.scard{background:#fff;border-radius:14px;padding:16px 18px;
-  border:1px solid var(--border);transition:all .2s;
-  box-shadow:0 2px 8px rgba(79,70,229,.06)}
-.scard:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(79,70,229,.12)}
-.scard .lbl{font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:500}
-.scard .val{font-size:26px;font-weight:700}
-.val-blue{color:var(--blue)}.val-green{color:var(--green)}
-.val-amber{color:var(--amber)}.val-purple{color:var(--purple)}
-
-/* SEC HEADER */
-.sec-header{display:flex;justify-content:space-between;align-items:center;
-  margin-bottom:1rem;flex-wrap:wrap;gap:8px}
-.sec-header h2{font-size:15px;font-weight:600;color:var(--text)}
+/* 섹션 헤더 */
+.sec-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;flex-wrap:wrap;gap:6px}
+.sec-header h2{font-size:15px;font-weight:600}
 .header-btns{display:flex;gap:8px;flex-wrap:wrap}
 
-/* BUTTONS */
-.btn{padding:8px 14px;font-size:12px;border-radius:9px;cursor:pointer;
-  font-weight:500;border:none;font-family:inherit;transition:all .15s}
-.btn-primary{background:var(--accent);color:#fff}
-.btn-primary:hover{background:#5a52e0;box-shadow:0 4px 14px rgba(108,99,255,.4)}
-.btn-export{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.25)}
-.btn-export:hover{background:rgba(34,197,94,.2)}
-.btn-import{background:rgba(59,130,246,.12);color:var(--blue);border:1px solid rgba(59,130,246,.25)}
-.btn-import:hover{background:rgba(59,130,246,.2)}
-.btn-template{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
-.btn-template:hover{background:var(--surface)}
-.btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border)}
-.btn-outline:hover{background:var(--surface2)}
-.btn-danger{background:transparent;color:var(--red);border:1px solid rgba(239,68,68,.3)}
-.btn-danger:hover{background:rgba(239,68,68,.1)}
-.btn-cancel{background:none;color:var(--text2);border:1px solid var(--border);
-  padding:9px 20px;font-size:13px;border-radius:9px;cursor:pointer;font-family:inherit}
-.btn-save{background:var(--accent);color:#fff;border:none;
-  padding:9px 24px;font-size:13px;border-radius:9px;cursor:pointer;font-weight:600;font-family:inherit}
-.btn-save:hover{background:#5a52e0}
+/* 버튼 */
+.btn{padding:7px 14px;font-size:12px;border-radius:8px;cursor:pointer;font-weight:500;border:none}
+.btn-primary{background:#1a1a1a;color:#fff}.btn-primary:hover{background:#333}
+.btn-export{background:#EAF3DE;color:#3B6D11;border:1px solid #C0DD97}.btn-export:hover{background:#C0DD97}
+.btn-import{background:#E1F5EE;color:#0F6E56;border:1px solid #9FE1CB}.btn-import:hover{background:#9FE1CB}
+.btn-template{background:#f5f5f3;color:#666;border:1px solid #ddd}.btn-template:hover{background:#e8e8e6}
+.btn-outline{background:none;color:#1a1a1a;border:1px solid #ddd}.btn-outline:hover{background:#f5f5f3}
+.btn-danger{background:none;color:#A32D2D;border:1px solid #F7C1C1}.btn-danger:hover{background:#FCEBEB}
+.btn-cancel{background:none;color:#666;border:1px solid #ddd;padding:8px 18px;font-size:13px;border-radius:8px;cursor:pointer}
+.btn-save{background:#1a1a1a;color:#fff;border:none;padding:8px 22px;font-size:13px;border-radius:8px;cursor:pointer;font-weight:500}
 
-/* FILTER ROW */
+/* 필터 */
 .filter-row{display:flex;gap:8px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
-.filter-row select,.filter-row input{
-  padding:7px 11px;border:1px solid var(--border);border-radius:9px;
-  font-size:12px;background:var(--input-bg);color:var(--text);height:36px;font-family:inherit}
-.filter-row input[type=text]{width:150px}
-.filter-row input:focus,.filter-row select:focus{outline:none;border-color:var(--accent)}
+.filter-row select,.filter-row input{padding:6px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px;background:#fff;color:#1a1a1a;height:34px}
+.filter-row input[type=text]{width:140px}
+.filter-row input:focus,.filter-row select:focus{outline:none;border-color:#185FA5}
 
-/* TABLE */
-.tbl-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--border);background:#fff;
-  box-shadow:0 2px 12px rgba(79,70,229,.06)}
+/* 테이블 */
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid #eee;background:#fff}
 table{width:100%;border-collapse:collapse;font-size:12px;min-width:1160px}
-th{text-align:left;padding:10px 12px;font-weight:600;font-size:11px;color:var(--text3);
-  border-bottom:1px solid var(--border);white-space:nowrap;background:#f8f9fd;
-  text-transform:uppercase;letter-spacing:.3px}
-td{padding:10px 12px;border-bottom:1px solid #eef0f7;vertical-align:middle;white-space:nowrap;color:var(--text)}
+th{text-align:left;padding:9px 10px;font-weight:500;font-size:11px;color:#888;border-bottom:1px solid #eee;white-space:nowrap;background:#fafaf8}
+td{padding:9px 10px;border-bottom:1px solid #f5f5f3;vertical-align:middle;white-space:nowrap}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:#f5f6ff}
+tr:hover td{background:#fafaf8}
 
-/* BADGES */
-.badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:500}
-.b-ing{background:rgba(59,130,246,.15);color:var(--blue)}
-.b-end{background:rgba(239,68,68,.15);color:var(--red)}
-.b-soon{background:rgba(245,158,11,.15);color:var(--amber)}
-.b-ga{background:rgba(59,130,246,.15);color:var(--blue)}
-.b-na{background:rgba(245,158,11,.15);color:var(--amber)}
-.b-daily{background:rgba(168,85,247,.15);color:var(--purple)}
-.b-special{background:rgba(245,158,11,.15);color:var(--amber)}
-.b-sports{background:rgba(34,197,94,.15);color:var(--green)}
-.b-ingest{background:rgba(59,130,246,.15);color:var(--blue)}
-.note-badge{font-size:10px;padding:1px 6px;border-radius:3px;
-  background:rgba(245,158,11,.15);color:var(--amber);margin-left:4px}
+/* 배지 */
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.b-ing{background:#E1F5EE;color:#0F6E56}.b-end{background:#FCEBEB;color:#A32D2D}.b-soon{background:#FAEEDA;color:#854F0B}
+.b-ga{background:#E6F1FB;color:#185FA5}.b-na{background:#FAEEDA;color:#854F0B}
+.b-daily{background:#EEEDFE;color:#534AB7}.b-special{background:#FAEEDA;color:#854F0B}
+.b-sports{background:#EAF3DE;color:#3B6D11}.b-ingest{background:#E6F1FB;color:#185FA5}
+.note-badge{font-size:10px;padding:1px 6px;border-radius:3px;background:#FAEEDA;color:#854F0B;margin-left:4px}
 
-/* PAGINATION */
-.pagination{display:flex;align-items:center;gap:8px;margin-top:1rem;
-  justify-content:flex-end;font-size:12px;color:var(--text3)}
-.pg-btn{padding:5px 12px;border:1px solid var(--border);border-radius:7px;
-  cursor:pointer;background:var(--surface2);color:var(--text2);font-size:12px}
-.pg-btn:disabled{opacity:.3;cursor:not-allowed}
+/* 페이지네이션 */
+.pagination{display:flex;align-items:center;gap:8px;margin-top:1rem;justify-content:flex-end;font-size:12px;color:#888}
+.pg-btn{padding:5px 12px;border:1px solid #ddd;border-radius:6px;cursor:pointer;background:#fff;font-size:12px}.pg-btn:disabled{opacity:0.4;cursor:not-allowed}
 
-/* MODAL */
-.modal-bg{position:fixed;inset:0;background:rgba(79,70,229,.15);display:flex;
-  align-items:flex-start;justify-content:center;padding-top:40px;z-index:100;overflow-y:auto;
-  backdrop-filter:blur(8px)}
-.modal{background:#fff;border-radius:18px;border:1px solid var(--border);
-  padding:1.75rem;width:100%;max-width:580px;margin-bottom:40px;
-  box-shadow:0 24px 64px rgba(79,70,229,.18)}
-.modal h3{font-size:17px;font-weight:700;margin-bottom:1.2rem;color:var(--text)}
-.modal-footer{display:flex;gap:8px;justify-content:flex-end;
-  margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--border)}
+/* 모달 */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:flex-start;justify-content:center;padding-top:40px;z-index:100;overflow-y:auto}
+.modal{background:#fff;border-radius:14px;border:1px solid #eee;padding:1.5rem;width:100%;max-width:580px;margin-bottom:40px;box-shadow:0 8px 32px rgba(0,0,0,0.12)}
+.modal h3{font-size:16px;font-weight:600;margin-bottom:0.6rem}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.2rem;padding-top:1rem;border-top:1px solid #eee}
 
-/* FORM */
+/* 폼 */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 .form-grid.three{grid-template-columns:1fr 1fr 1fr}
 .fg{display:flex;flex-direction:column;gap:5px}
-.fg label{font-size:11px;color:var(--text2);font-weight:600}
-.fg input,.fg select,.fg textarea{
-  padding:9px 11px;border:1.5px solid var(--border);border-radius:9px;
-  font-size:13px;background:#fff;color:var(--text);width:100%;font-family:inherit}
-.fg input:focus,.fg select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,70,229,.1)}
+.fg label{font-size:11px;color:#888;font-weight:500}
+.fg input,.fg select,.fg textarea{padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a;width:100%}
+.fg input:focus,.fg select:focus{outline:none;border-color:#185FA5}
 .fg.full{grid-column:1/-1}
-.sec-div{font-size:11px;font-weight:600;color:var(--text3);padding-bottom:5px;
-  border-bottom:1px solid var(--border);grid-column:1/-1;margin-top:6px;
-  text-transform:uppercase;letter-spacing:.5px}
+.sec-div{font-size:11px;font-weight:600;color:#888;padding-bottom:5px;border-bottom:1px solid #eee;grid-column:1/-1;margin-top:6px;text-transform:uppercase;letter-spacing:0.5px}
 
-/* SUBTYPE */
-.subtype-box{background:var(--surface2);border-radius:9px;padding:10px 14px;
-  border:1px solid var(--border);grid-column:1/-1;display:none}
+/* 세부구분 버튼 */
+.subtype-box{background:#f5f5f3;border-radius:8px;padding:10px 14px;border:1px solid #eee;grid-column:1/-1;display:none}
 .subtype-box.show{display:block}
-.sb-label{font-size:11px;color:var(--text3);font-weight:500;margin-bottom:8px}
+.sb-label{font-size:11px;color:#888;font-weight:500;margin-bottom:8px}
 .subtype-btns{display:flex;gap:8px}
-.st-btn{padding:6px 18px;font-size:12px;border:1px solid var(--border);border-radius:8px;
-  cursor:pointer;background:var(--input-bg);color:var(--text3);transition:all .1s;font-family:inherit}
-.st-btn.sel-daily{background:rgba(168,85,247,.2);color:var(--purple);border-color:var(--purple);font-weight:500}
-.st-btn.sel-special{background:rgba(245,158,11,.2);color:var(--amber);border-color:var(--amber);font-weight:500}
-.st-btn.sel-sports{background:rgba(34,197,94,.2);color:var(--green);border-color:var(--green);font-weight:500}
+.st-btn{padding:6px 18px;font-size:12px;border:1px solid #ddd;border-radius:8px;cursor:pointer;background:#fff;color:#666;transition:all 0.1s}
+.st-btn.sel-daily{background:#EEEDFE;color:#534AB7;border-color:#AFA9EC;font-weight:500}
+.st-btn.sel-special{background:#FAEEDA;color:#854F0B;border-color:#FAC775;font-weight:500}
+.st-btn.sel-sports{background:#EAF3DE;color:#3B6D11;border-color:#C0DD97;font-weight:500}
 
-/* UPLOAD ZONE */
-.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:16px;
-  margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer;
-  background:var(--input-bg);transition:all .15s}
-.upload-zone:hover{border-color:var(--accent);background:rgba(108,99,255,.08)}
-.upload-zone.dragging{border-color:var(--accent);background:rgba(108,99,255,.1)}
-.u-icon{width:40px;height:40px;border-radius:9px;background:rgba(108,99,255,.15);
-  display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.u-title{font-size:13px;font-weight:500;color:var(--text)}
-.u-sub{font-size:11px;color:var(--text3);margin-top:2px}
+/* 이력서 업로드 */
+.upload-zone{border:2px dashed #ddd;border-radius:12px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer;background:#fafaf8;transition:all 0.15s}
+.upload-zone:hover{border-color:#185FA5;background:#E6F1FB}
+.upload-zone.dragging{border-color:#185FA5;background:#E6F1FB}
+.u-icon{width:38px;height:38px;border-radius:8px;background:#E6F1FB;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.u-title{font-size:13px;font-weight:500}
+.u-sub{font-size:11px;color:#888;margin-top:2px}
 .method-tabs{display:flex;gap:6px;margin-bottom:12px}
-.m-tab{padding:5px 14px;font-size:12px;border:1px solid var(--border);border-radius:7px;
-  cursor:pointer;background:var(--surface2);color:var(--text3);font-family:inherit}
-.m-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
-.paste-area{width:100%;height:90px;padding:9px 11px;border:1px solid var(--border);
-  border-radius:9px;font-size:12px;resize:vertical;font-family:inherit;
-  color:var(--text);background:var(--input-bg)}
-.btn-parse-text{margin-top:8px;padding:8px 18px;background:var(--blue);color:#fff;
-  border:none;border-radius:9px;font-size:12px;cursor:pointer;font-weight:500;font-family:inherit}
+.m-tab{padding:5px 14px;font-size:12px;border:1px solid #ddd;border-radius:6px;cursor:pointer;background:#fff;color:#888}
+.m-tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.paste-area{width:100%;height:90px;padding:8px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px;resize:vertical;font-family:inherit;color:#1a1a1a}
+.btn-parse-text{margin-top:8px;padding:7px 16px;background:#185FA5;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-weight:500}
 
-/* AI STATUS */
-.ai-status{display:none;align-items:center;gap:8px;font-size:12px;
-  padding:9px 12px;border-radius:9px;margin-bottom:10px}
+/* AI 상태 */
+.ai-status{display:none;align-items:center;gap:8px;font-size:12px;padding:9px 12px;border-radius:8px;margin-bottom:10px}
 .ai-status.show{display:flex}
-.ai-status.loading{background:rgba(59,130,246,.12);color:var(--blue)}
-.ai-status.done{background:rgba(34,197,94,.12);color:var(--green)}
-.ai-status.err{background:rgba(239,68,68,.12);color:var(--red)}
-.spinner{width:13px;height:13px;border:2px solid rgba(255,255,255,.15);
-  border-top:2px solid var(--blue);border-radius:50%;
-  animation:spin .8s linear infinite;flex-shrink:0}
+.ai-status.loading{background:#E6F1FB;color:#185FA5}
+.ai-status.done{background:#E1F5EE;color:#0F6E56}
+.ai-status.err{background:#FCEBEB;color:#A32D2D}
+.spinner{width:13px;height:13px;border:2px solid #B5D4F4;border-top:2px solid #185FA5;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
-.filled-badge{display:inline-block;padding:1px 5px;background:rgba(34,197,94,.15);
-  color:var(--green);border-radius:3px;font-size:10px;margin-left:4px;vertical-align:middle}
+.filled-badge{display:inline-block;padding:1px 5px;background:#E1F5EE;color:#0F6E56;border-radius:3px;font-size:10px;margin-left:4px;vertical-align:middle}
 
-/* AI RESULT */
-.ai-result{display:none;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);
-  border-radius:9px;padding:12px;margin-bottom:12px}
+/* AI 결과 미리보기 */
+.ai-result{display:none;background:#F8FDFB;border:1px solid #9FE1CB;border-radius:8px;padding:12px;margin-bottom:12px}
 .ai-result.show{display:block}
-.ai-result-title{font-size:11px;font-weight:600;color:var(--green);margin-bottom:8px}
+.ai-result-title{font-size:11px;font-weight:600;color:#0F6E56;margin-bottom:8px}
 .ai-result-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px 16px}
 .ai-result-row{font-size:12px;display:flex;gap:6px}
-.ai-result-key{color:var(--text3);min-width:54px;flex-shrink:0}
-.ai-result-val{color:var(--text);font-weight:500}
+.ai-result-key{color:#888;min-width:54px;flex-shrink:0}
+.ai-result-val{color:#1a1a1a;font-weight:500}
 
-/* AGENCY GRID */
+/* 파견업체 */
 .agency-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:1rem}
-.agency-card{background:var(--card-bg);border:1px solid var(--border);border-radius:14px;
-  padding:18px 20px;transition:all .2s}
-.agency-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.3);transform:translateY(-2px)}
-.agency-name{font-size:15px;font-weight:700;color:var(--text)}
-.agency-info{font-size:12px;color:var(--text3);margin-top:3px}
-.agency-status{font-size:11px;padding:3px 10px;border-radius:5px;
-  background:var(--surface2);color:var(--text3)}
-.agency-status.on{background:rgba(34,197,94,.15);color:var(--green)}
+.agency-card{background:#fff;border:1px solid #eee;border-radius:14px;padding:16px 20px;transition:box-shadow 0.15s}.agency-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.08)}
+.agency-name{font-size:14px;font-weight:600}
+.agency-info{font-size:12px;color:#888;margin-top:3px}
+.agency-status{font-size:11px;padding:3px 10px;border-radius:4px;background:#f5f5f3;color:#888}
+.agency-status.on{background:#E1F5EE;color:#0F6E56}
 
-/* HISTORY */
-.hist-item{padding:12px 0;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start}
+/* 이력 */
+.hist-item{padding:11px 0;border-bottom:1px solid #f5f5f3;display:flex;gap:12px;align-items:flex-start}
 .hist-item:last-child{border-bottom:none}
 .hdot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
-.hdot.new{background:var(--blue)}.hdot.replace{background:var(--amber)}
-.hist-date{font-size:11px;color:var(--text3);margin-top:2px}
+.hdot.new{background:#185FA5}.hdot.replace{background:#854F0B}
+.hist-date{font-size:11px;color:#888;margin-top:2px}
 
-/* EXCEL IMPORT */
-.excel-drop{border:2px dashed rgba(34,197,94,.3);border-radius:12px;padding:24px;
-  text-align:center;background:rgba(34,197,94,.05);cursor:pointer;margin-bottom:1rem}
-.excel-drop:hover{border-color:var(--green);background:rgba(34,197,94,.08)}
+/* 엑셀 import */
+.excel-drop{border:2px dashed #9FE1CB;border-radius:12px;padding:24px;text-align:center;background:#F8FDFB;cursor:pointer;margin-bottom:1rem}
+.excel-drop:hover{border-color:#0F6E56;background:#E1F5EE}
 .col-map{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:240px;overflow-y:auto;margin-bottom:1rem}
 .col-row{display:flex;flex-direction:column;gap:4px}
-.col-row label{font-size:11px;color:var(--text3)}
-.col-row select{padding:5px 8px;border:1px solid var(--border);border-radius:7px;
-  font-size:12px;background:var(--input-bg);color:var(--text)}
-.import-info{font-size:12px;padding:9px 12px;background:var(--surface2);
-  border-radius:9px;margin-bottom:12px;color:var(--text2)}
+.col-row label{font-size:11px;color:#888}
+.col-row select{padding:5px 8px;border:1px solid #ddd;border-radius:6px;font-size:12px}
+.import-info{font-size:12px;padding:8px 12px;background:#f5f5f3;border-radius:8px;margin-bottom:12px}
 
-/* EMPTY */
-.empty{text-align:center;padding:3rem;color:var(--text3);font-size:13px}
+/* 빈 상태 */
+.empty{text-align:center;padding:3rem;color:#888;font-size:13px}
 
-/* FORMAT BADGES */
-.fmt-kbs{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.2)}
-.fmt-mi{background:rgba(59,130,246,.15);color:var(--blue);border:1px solid rgba(59,130,246,.2)}
-.fmt-primus{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.2)}
-.fmt-etc{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
+/* 포맷 배지 */
+.fmt-kbs{background:#FCEBEB;color:#A32D2D;border:1px solid #F7C1C1}
+.fmt-mi{background:#E6F1FB;color:#185FA5;border:1px solid #B5D4F4}
+.fmt-primus{background:#EAF3DE;color:#3B6D11;border:1px solid #C0DD97}
+.fmt-etc{background:#f5f5f3;color:#888;border:1px solid #ddd}
 .fmt-badge{padding:3px 8px;border-radius:4px;font-size:10px;font-weight:500}
 
-/* PAGE SWITCH */
-.page{display:none}.page.active{display:block;animation:fadeIn .2s ease}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-
-/* WAGE TABLE */
-#wage-panel{background:#fff;border:1px solid var(--border);border-radius:14px;
-  padding:1.25rem;margin-bottom:1.2rem;box-shadow:0 2px 8px rgba(79,70,229,.06)}
-#wage-panel input{background:#f8f9fd;color:var(--text);border:1px solid var(--border);
-  border-radius:7px;padding:5px 8px;font-size:13px}
-
-/* DAY EDIT OVERLAY */
-#day-edit-overlay{background:rgba(79,70,229,.12);backdrop-filter:blur(10px)}
-#day-edit-overlay > div{background:#fff;border:1px solid var(--border);border-radius:18px;
-  box-shadow:0 24px 64px rgba(79,70,229,.18)}
-#dem-start,#dem-end{background:#f8f9fd!important;color:var(--text)!important;
-  border:2px solid var(--border)!important;border-radius:10px!important}
-
-/* SCROLLBAR */
-::-webkit-scrollbar{width:5px;height:5px}
-::-webkit-scrollbar-track{background:#eef0f7}
-::-webkit-scrollbar-thumb{background:#c5cae0;border-radius:3px}
-
-/* SELECT & INPUT GLOBAL */
-select,input,textarea{color-scheme:light}
-
-
-/* ══════════════════════════════════
-   파견료 정산 탭 — 라이트 테마 보정
-   원본 JS의 흰 배경/연한 색상 인라인 스타일을
-   라이트 테마에 맞게 보정
-   ══════════════════════════════════ */
-
-/* 요약 카드 */
-#pay-content > div[style*="background:#f5f5f3"] { background:#f4f6fb!important; }
-#pay-content > div[style*="background:#FFF3E8"] { background:#fffbf0!important; border:1px solid #fde68a!important; }
-#pay-content > div[style*="background:#E6F1FB"] { background:#eff6ff!important; border:1px solid #bfdbfe!important; }
-
-/* 정산 목록 테이블 */
-#pay-content table { background:#fff; }
-#pay-content thead tr { background:#f8f9fd!important; }
-#pay-content thead th { color:#7b85a8!important; border-bottom:1px solid #dde2ee!important; }
-#pay-content tbody tr:hover td { background:#f5f6ff!important; }
-#pay-content tbody td { color:#1e2340!important; border-bottom:1px solid #eef0f7!important; }
-
-/* 성명 컬럼 */
-#pay-content td[style*="font-weight:500"] { color:#1e2340!important; font-weight:600!important; }
-
-/* 기본급 숫자 */
-#pay-content td[style*="text-align:right"][style*="color:#888"] { color:#4a5272!important; font-weight:500!important; }
-
-/* 시간외수당 — 주황 */
-#pay-content td[style*="color:#854F0B"] { color:#b45309!important; font-weight:600!important; }
-#pay-content td[style*="color:#ccc"] { color:#c5cae0!important; }
-
-/* 총 파견료 — 파랑 */
-#pay-content td[style*="color:#185FA5"] { color:#1d4ed8!important; font-weight:700!important; }
-
-/* 직군 배지 */
-#pay-content span[style*="background:#E6F1FB"] { background:#dbeafe!important; color:#1d4ed8!important; }
-#pay-content span[style*="background:#EEEDFE"] { background:#ede9fe!important; color:#5b21b6!important; }
-#pay-content span[style*="background:#FAEEDA"] { background:#fef3c7!important; color:#92400e!important; }
-#pay-content span[style*="background:#FCEBEB"] { background:#fee2e2!important; color:#991b1b!important; }
-
-/* 버튼 */
-#pay-content span[style*="background:#f5f5f3"] { background:#f4f6fb!important; color:#4a5272!important; }
-#pay-content span[style*="background:#1a1a1a"] { background:#1e2340!important; color:#fff!important; }
-#pay-content button[style*="border:1.5px solid #F7C1C1"] { border-color:#fca5a5!important; color:#dc2626!important; }
-#pay-content button[style*="background:#A32D2D"] { background:#dc2626!important; border-color:#dc2626!important; }
-#pay-content td[style*="color:#888"][style*="font-size:12px"] { color:#7b85a8!important; }
-
-/* ══ 일별 상세 뷰 ══ */
-#pay-detail-inner { color:#1e2340; }
-#pay-detail-inner button[style*="background:#f5f5f3"] { background:#f4f6fb!important; color:#4a5272!important; border:1px solid #dde2ee!important; }
-#pay-detail-inner > div[style*="background:#fff"] { background:#fff!important; border-color:#dde2ee!important; box-shadow:0 2px 12px rgba(79,70,229,.06)!important; }
-#pay-detail-inner [style*="background:#f8f8f6"] { background:#f4f6fb!important; }
-#pay-detail-inner [style*="background:#FFF3E8"] { background:#fffbf0!important; }
-#pay-detail-inner [style*="background:#E6F1FB"] { background:#eff6ff!important; border-color:#bfdbfe!important; }
-
-/* 합계 카드 텍스트 */
-#pay-detail-inner [style*="color:#555"] { color:#4a5272!important; }
-#pay-detail-inner [style*="color:#185FA5"] { color:#1d4ed8!important; }
-#pay-detail-inner [style*="color:#854F0B"] { color:#b45309!important; }
-#pay-detail-inner [style*="color:#333"] { color:#1e2340!important; }
-#pay-detail-inner [style*="color:#aaa"] { color:#a0abc8!important; }
-#pay-detail-inner [style*="color:#888"] { color:#7b85a8!important; }
-
-/* 날짜 테이블 */
-#pay-detail-inner table { background:#fff; }
-#pay-detail-inner td { border-color:#eef0f7!important; }
-#pay-detail-inner tr[style*="background:#fff"] { background:#fff!important; }
-#pay-detail-inner tr[style*="background:#F8F0FF"] { background:#faf5ff!important; }
-#pay-detail-inner tr[style*="background:#FFF8F0"] { background:#fffbf0!important; }
-#pay-detail-inner tr[style*="background:#F0F9FF"] { background:#f0f9ff!important; }
-#pay-detail-inner tr[style*="background:#f0f0ec"] { background:#f4f6fb!important; }
-
-/* 요일 배지 */
-#pay-detail-inner span[style*="background:#FCEBEB"] { background:#fee2e2!important; }
-#pay-detail-inner span[style*="background:#E6F1FB"] { background:#dbeafe!important; }
-#pay-detail-inner span[style*="background:#f0f0ec"] { background:#eef0f7!important; }
-
-/* 시간 인풋 */
-#pay-detail-inner input[type="text"][id^="inp-"] {
-  background:#f8f9fd!important; color:#1e2340!important;
-  border-color:#dde2ee!important;
-}
-#pay-detail-inner input[type="text"][style*="background:#EBF4FF"] {
-  background:#dbeafe!important; color:#1d4ed8!important; border-color:#3b82f6!important;
-}
-
-/* 색상 텍스트 */
-#pay-detail-inner [style*="color:#bbb"] { color:#a0abc8!important; }
-#pay-detail-inner [style*="color:#ddd"] { color:#c5cae0!important; }
-#pay-detail-inner [style*="color:#ccc"] { color:#c5cae0!important; }
-#pay-detail-inner [style*="color:#e0e0e0"] { color:#dde2ee!important; }
-
-/* 합계 행 */
-#pay-detail-inner tr[style*="background:#f0f0ec"] td { background:#f4f6fb!important; color:#1e2340!important; }
-
-/* 버튼들 */
-#pay-detail-inner button[style*="background:#f0f0ec"] { background:#f4f6fb!important; color:#4a5272!important; border:1px solid #dde2ee!important; }
-#pay-detail-inner button[style*="background:#1a1a1a"] { background:#1e2340!important; color:#fff!important; }
-
-/* 시간외 배지 */
-#pay-detail-inner [style*="background:#E6F1FB"][style*="color:#185FA5"] { background:#dbeafe!important; color:#1d4ed8!important; }
-#pay-detail-inner [style*="background:#EEEDFE"][style*="color:#534AB7"] { background:#ede9fe!important; color:#5b21b6!important; }
-#pay-detail-inner [style*="background:#1a1a2e"] { background:#1e1b4b!important; }
-#pay-detail-inner [style*="background:#FCEBEB"][style*="color:#A32D2D"] { background:#fee2e2!important; color:#991b1b!important; }
-#pay-detail-inner input#ds-absent-inp { background:#f8f9fd!important; color:#b45309!important; }
-#pay-detail-inner button[style*="background:#FFF0F0"] { background:#fef2f2!important; color:#dc2626!important; border-color:#fca5a5!important; }
-
-/* ══ 통계(rank) 탭 ══ */
-#rank-summary .scard { background:#fff!important; border-color:#dde2ee!important; }
-#rank-content table { background:#fff; }
-#rank-content thead tr { background:#f8f9fd!important; }
-#rank-content thead th { color:#7b85a8!important; border-color:#dde2ee!important; }
-#rank-content tbody tr { border-color:#eef0f7!important; }
-#rank-content tbody td { color:#1e2340!important; border-color:#eef0f7!important; }
-#rank-content [style*="background:#FFFDE7"] { background:#fefce8!important; }
-#rank-content [style*="background:#F1F8E9"] { background:#f0fdf4!important; }
-#rank-content [style*="background:#FFF3E8"] { background:#fffbf0!important; }
-#rank-content [style*="background:#EBF4FF"] { background:#eff6ff!important; }
-#rank-content [style*="background:#FCEBEB"] { background:#fee2e2!important; color:#991b1b!important; }
-#rank-content [style*="background:#eee"] { background:#eef0f7!important; }
-#rank-content [style*="background:#b0c8e8"] { background:#bfdbfe!important; }
-#rank-content [style*="background:#185FA5"] { background:#2563eb!important; }
+.page{display:none}.page.active{display:block}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 </style>
 
-</head>
+  </head>
 <body>
 <div class="app">
   <div class="app-header">
-    <div style="display:flex;align-items:center;gap:10px">
-      <div style="width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#6c63ff,#ff6584);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🎬</div>
-      <div>
-        <h1>KBS 보도영상국 파견인력 관리 시스템</h1>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px">뉴스영상콘텐츠부 · 인제스트 &amp; 촬영보조</div>
-      </div>
+    <div>
+      <h1>🎬 KBS 보도영상국 파견인력 관리 시스템</h1>
     </div>
     <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
-      <span id="sync-indicator" style="display:none;align-items:center;gap:5px;font-size:11px;color:var(--green);background:rgba(34,197,94,.1);padding:4px 10px;border-radius:20px;border:1px solid rgba(34,197,94,.2)">
-        <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite"></span>자동동기화
-      </span>
-      <span id="save-status" style="font-size:11px;color:var(--text3)"></span>
-      <button onclick="openDataMgr()" style="padding:7px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;font-size:12px;cursor:pointer;color:var(--text2);font-weight:500;font-family:inherit">💾 데이터 관리</button>
+      <span id="save-status" style="font-size:11px;color:#aaa"></span>
+      <button onclick="openDataMgr()" style="padding:7px 14px;background:#f5f5f3;border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer;color:#666;font-weight:500">💾 데이터 관리</button>
+      <span class="subtitle">뉴스영상콘텐츠부 · 인제스트 &amp; 촬영보조</span>
     </div>
   </div>
 
@@ -435,7 +199,9 @@ select,input,textarea{color-scheme:light}
     <button class="tab" onclick="showPage('pay')">파견료 정산</button>
     <button class="tab" onclick="showPage('rank')">📊 통계</button>
   </div>
-<div id="page-list" class="page active">
+
+  <!-- 직원현황 -->
+  <div id="page-list" class="page active">
     <div class="summary" id="summary"></div>
     <!-- 부서 탭 -->
     <div class="dept-tabs" id="dept-tabs">
@@ -867,7 +633,6 @@ select,input,textarea{color-scheme:light}
   </div>
 </div>
 
-
 <script>
 
 // ─── 기본 상수 ───────────────────────────────────────────
@@ -894,14 +659,14 @@ const FIELDS = [
 const INITIAL_PAYROLL = JSON.parse('{"1_2026_04":{},"2_2026_04":{},"3_2026_04":{},"4_2026_04":{},"5_2026_04":{},"6_2026_04":{},"7_2026_04":{},"8_2026_04":{},"9_2026_04":{},"10_2026_04":{},"11_2026_04":{},"12_2026_04":{},"13_2026_04":{},"101_2026_04":{},"102_2026_04":{},"103_2026_04":{},"104_2026_04":{},"105_2026_04":{},"106_2026_04":{},"107_2026_04":{},"108_2026_04":{},"109_2026_04":{},"110_2026_04":{},"111_2026_04":{},"112_2026_04":{},"113_2026_04":{},"114_2026_04":{},"115_2026_04":{},"116_2026_04":{},"117_2026_04":{},"118_2026_04":{},"119_2026_04":{},"120_2026_04":{},"121_2026_04":{},"122_2026_04":{},"123_2026_04":{},"124_2026_04":{},"125_2026_04":{},"126_2026_04":{},"127_2026_04":{},"128_2026_04":{},"129_2026_04":{},"130_2026_04":{},"131_2026_04":{},"132_2026_04":{},"133_2026_04":{},"134_2026_04":{},"135_2026_04":{},"136_2026_04":{},"137_2026_04":{},"138_2026_04":{},"139_2026_04":{},"140_2026_04":{},"141_2026_04":{},"142_2026_04":{},"201_2026_04":{},"202_2026_04":{},"203_2026_04":{},"204_2026_04":{},"205_2026_04":{},"206_2026_04":{},"301_2026_04":{},"302_2026_04":{},"303_2026_04":{},"304_2026_04":{},"305_2026_04":{},"400_2026_04":{},"401_2026_04":{},"1_2026_03":{"2":{"start":"09:00","end":"20:00","holiday":true},"3":{"start":"10:00","end":"20:00","holiday":true},"4":{"start":"20:00","end":"09:00","holiday":false},"8":{"start":"11:00","end":"22:00","holiday":false},"9":{"start":"11:00","end":"21:00","holiday":false},"10":{"start":"10:00","end":"20:00","holiday":false},"11":{"start":"14:00","end":"22:00","holiday":false},"12":{"start":"14:00","end":"22:00","holiday":false},"13":{"start":"14:00","end":"22:00","holiday":false},"14":{"start":"11:00","end":"22:00","holiday":false},"16":{"start":"10:00","end":"20:00","holiday":false},"17":{"start":"10:00","end":"20:00","holiday":false},"18":{"start":"14:00","end":"22:00","holiday":false},"19":{"start":"11:00","end":"20:00","holiday":false},"20":{"start":"20:00","end":"09:00","holiday":false},"22":{"start":"11:00","end":"22:00","holiday":false},"23":{"start":"09:00","end":"19:00","holiday":false},"24":{"start":"10:00","end":"20:00","holiday":false},"25":{"start":"14:00","end":"22:00","holiday":false},"26":{"start":"14:00","end":"22:00","holiday":false},"27":{"start":"09:00","end":"19:00","holiday":false},"28":{"start":"","end":"","holiday":false},"29":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"09:00","end":"20:00","holiday":false},"31":{"start":"20:00","end":"09:00","holiday":false}},"2_2026_03":{"3":{"start":"14:00","end":"22:00","holiday":true},"4":{"start":"10:00","end":"19:30","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"20:00","end":"09:00","holiday":false,"nextDay":true},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"10:00","end":"20:00","holiday":false},"12":{"start":"10:00","end":"19:00","holiday":false},"13":{"start":"20:00","end":"09:00","holiday":false,"nextDay":true},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"20:00","end":"09:00","holiday":false,"nextDay":true},"22":{"start":"09:00","end":"20:00","holiday":false},"23":{"start":"10:00","end":"19:00","holiday":false},"24":{"start":"11:00","end":"20:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"19:00","holiday":false},"27":{"start":"11:00","end":"20:00","holiday":false},"28":{"start":"20:00","end":"09:00","holiday":false,"nextDay":true},"30":{"start":"14:00","end":"22:00","holiday":false},"31":{"start":"14:00","end":"22:00","holiday":false}},"3_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"11:00","end":"20:00","holiday":false},"6":{"start":"14:00","end":"22:00","holiday":false},"7":{"start":"11:00","end":"22:00","holiday":false},"8":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"10":{"start":"14:00","end":"22:00","holiday":false},"11":{"start":"11:00","end":"20:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"14":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"16":{"start":"14:00","end":"22:00","holiday":false},"17":{"start":"11:00","end":"20:00","holiday":false},"18":{"start":"11:00","end":"20:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"11:00","end":"22:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"26":{"start":"09:00","end":"20:00","holiday":false},"27":{"start":"14:00","end":"22:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"29":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"11:00","end":"20:00","holiday":false},"31":{"start":"10:00","end":"20:00","holiday":false}},"4_2026_03":{"2":{"start":"11:00","end":"22:00","holiday":true},"3":{"start":"20:00","end":"09:00","nextDay":true,"holiday":true},"5":{"start":"14:00","end":"22:00","holiday":false},"6":{"start":"14:00","end":"22:00","holiday":false},"7":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false,"nextDay":false},"10":{"start":"14:00","end":"22:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"11:00","end":"20:00","holiday":false},"15":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"17":{"start":"14:00","end":"22:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"10:00","end":"19:00","holiday":false},"20":{"start":"10:00","end":"19:00","holiday":false},"21":{"start":"20:00","end":"","holiday":false},"23":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"14:00","end":"22:00","holiday":false},"31":{"start":"14:00","end":"22:00","holiday":false}},"5_2026_03":{"1":{"start":"11:00","end":"22:00","holiday":false},"2":{"start":"20:00","end":"09:00","nextDay":true,"holiday":true},"4":{"start":"09:00","end":"18:30","holiday":false},"5":{"start":"09:00","end":"14:00","holiday":false},"8":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"14:00","end":"22:00","holiday":false},"12":{"start":"11:00","end":"20:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"15":{"start":"09:00","end":"20:00","holiday":false},"16":{"start":"14:00","end":"22:00","holiday":false},"17":{"start":"14:00","end":"22:00","holiday":false},"18":{"start":"10:00","end":"19:30","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"20:00","end":"","holiday":false},"22":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"24":{"start":"14:00","end":"22:00","holiday":false},"25":{"start":"10:00","end":"19:00","holiday":false},"26":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"27":{"start":"11:00","end":"22:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"29":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"20:00","end":"","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"6_2026_03":{"4":{"start":"14:00","end":"22:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"7":{"start":"09:00","end":"20:00","holiday":false},"8":{"start":"09:00","end":"21:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"12":{"start":"14:00","end":"22:00","holiday":false},"13":{"start":"10:00","end":"19:00","holiday":false},"15":{"start":"11:00","end":"22:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"14:00","end":"22:00","holiday":false},"20":{"start":"14:00","end":"22:00","holiday":false},"21":{"start":"20:00","end":"","holiday":false},"23":{"start":"14:00","end":"22:00","holiday":false},"24":{"start":"14:00","end":"22:00","holiday":false},"25":{"start":"14:00","end":"22:00","holiday":false},"26":{"start":"14:00","end":"22:00","holiday":false},"27":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"29":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"30":{"start":"20:00","end":"","holiday":false}},"7_2026_03":{"1":{"start":"20:00","end":"09:00","holiday":false},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:30","holiday":false},"5":{"start":"20:00","end":"09:00","holiday":false},"11":{"start":"14:00","end":"22:00","holiday":false},"12":{"start":"14:00","end":"22:00","holiday":false},"13":{"start":"14:00","end":"22:00","holiday":false},"14":{"start":"11:00","end":"22:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"20:00","end":"09:00","holiday":false},"20":{"start":"14:00","end":"22:00","holiday":false},"21":{"start":"11:00","end":"22:00","holiday":false},"23":{"start":"14:00","end":"22:00","holiday":false},"24":{"start":"14:00","end":"22:00","holiday":false},"25":{"start":"11:00","end":"20:00","holiday":false},"26":{"start":"11:00","end":"20:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"29":{"start":"09:00","end":"20:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"8_2026_03":{"1":{"start":"11:00","end":"22:00","holiday":false},"3":{"start":"11:00","end":"22:00","holiday":true},"4":{"start":"11:00","end":"20:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"8":{"start":"09:00","end":"20:00","holiday":false},"9":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"11":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"13":{"start":"14:00","end":"22:00","holiday":false},"16":{"start":"14:00","end":"22:00","holiday":false},"17":{"start":"14:00","end":"22:00","holiday":false},"18":{"start":"14:00","end":"22:00","holiday":false},"19":{"start":"14:00","end":"22:00","holiday":false},"20":{"start":"14:00","end":"22:00","holiday":false},"21":{"start":"20:00","end":"","holiday":false},"22":{"start":"11:00","end":"22:00","holiday":false},"23":{"start":"11:00","end":"20:00","holiday":false},"24":{"start":"11:00","end":"20:00","holiday":false},"25":{"start":"14:00","end":"22:00","holiday":false},"26":{"start":"09:00","end":"20:00","holiday":false},"27":{"start":"11:00","end":"22:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"29":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false}},"9_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"11:00","end":"20:00","holiday":false},"5":{"start":"11:00","end":"20:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"11:00","end":"20:00","holiday":false},"17":{"start":"11:00","end":"20:00","holiday":false},"18":{"start":"11:00","end":"20:00","holiday":false},"19":{"start":"11:00","end":"20:00","holiday":false},"20":{"start":"11:00","end":"20:00","holiday":false},"21":{"start":"20:00","end":"","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"27":{"start":"11:00","end":"22:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"29":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"14:00","end":"22:00","holiday":false},"31":{"start":"11:00","end":"20:00","holiday":false}},"10_2026_03":{"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"11:00","end":"20:00","holiday":false},"6":{"start":"11:00","end":"20:00","holiday":false},"9":{"start":"11:00","end":"20:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"11:00","end":"20:00","holiday":false},"12":{"start":"11:00","end":"20:00","holiday":false},"13":{"start":"11:00","end":"20:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"11:00","end":"20:00","holiday":false},"19":{"start":"14:00","end":"22:00","holiday":false},"20":{"start":"11:00","end":"20:00","holiday":false},"21":{"start":"20:00","end":"","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"11:00","end":"20:00","holiday":false},"26":{"start":"11:00","end":"20:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"29":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"11:00","end":"20:00","holiday":false}},"11_2026_03":{"3":{"start":"11:00","end":"20:00","holiday":true},"4":{"start":"11:00","end":"20:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"11:00","end":"20:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"11:00","end":"20:00","holiday":false},"17":{"start":"11:00","end":"20:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"20:00","end":"","holiday":false},"23":{"start":"11:00","end":"20:00","holiday":false},"24":{"start":"11:00","end":"20:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"29":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"11:00","end":"20:00","holiday":false}},"12_2026_03":{"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"29":{"start":"11:00","end":"22:00","holiday":false},"30":{"start":"11:00","end":"20:00","holiday":false},"31":{"start":"11:00","end":"20:00","holiday":false}},"13_2026_03":{"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"101_2026_03":{"2":{"start":"09:00","end":"18:00","holiday":true},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"7":{"start":"09:00","end":"22:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"11":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"14":{"start":"09:00","end":"22:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"09:00","end":"22:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"09:00","end":"22:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"102_2026_03":{"2":{"start":"09:00","end":"18:00","holiday":true},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"20:00","holiday":false},"5":{"start":"17:00","end":"09:00","holiday":false,"nextDay":true},"6":{"start":"","end":"","holiday":false,"nextDay":false},"8":{"start":"18:00","end":"09:00","holiday":false},"10":{"start":"09:00","end":"20:00"},"11":{"start":"09:00","end":"20:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"14":{"start":"19:00","end":"08:00","holiday":false},"16":{"start":"17:00","end":"09:00","holiday":false,"nextDay":true},"18":{"start":"09:00","end":"21:00","holiday":false},"19":{"start":"13:00","end":"23:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"19:00","holiday":false},"24":{"start":"09:00","end":"19:00","holiday":false},"25":{"start":"17:00","end":"09:00","holiday":false,"nextDay":true},"31":{"start":"13:00","end":"22:00","holiday":false}},"103_2026_03":{"3":{"start":"17:00","end":"24:00","holiday":true},"4":{"start":"00:00","end":"09:00","holiday":false},"5":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"06:00","end":"18:00","holiday":false},"12":{"start":"08:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"15":{"start":"18:00","end":"24:00","holiday":false},"16":{"start":"00:00","end":"09:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"17:00","end":"24:00","holiday":false},"21":{"start":"00:00","end":"09:00","holiday":false},"23":{"start":"17:00","end":"24:00","holiday":false},"24":{"start":"00:00","end":"09:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"19:00","end":"24:00","holiday":false},"29":{"start":"00:00","end":"08:00","holiday":false},"30":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"31":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false}},"104_2026_03":{"3":{"start":"08:00","end":"18:00","holiday":true},"4":{"start":"17:00","end":"24:00","holiday":false},"5":{"start":"00:00","end":"09:00","holiday":false},"6":{"start":"09:00","end":"19:00","holiday":false},"9":{"start":"17:00","end":"24:00","holiday":false},"10":{"start":"00:00","end":"09:00","holiday":false},"11":{"start":"08:00","end":"18:00","holiday":false},"12":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"13":{"start":"17:00","end":"24:00","holiday":false},"14":{"start":"00:00","end":"09:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"17:00","end":"24:00","holiday":false},"20":{"start":"00:00","end":"09:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"17:00","end":"24:00","holiday":false},"25":{"start":"00:00","end":"09:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"29":{"start":"18:00","end":"24:00","holiday":false},"30":{"start":"00:00","end":"09:00","holiday":false},"31":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false}},"105_2026_03":{"1":{"start":"09:00","end":"18:00","holiday":false},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"7":{"start":"13:00","end":"21:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"22:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"22":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"22:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"106_2026_03":{"3":{"start":"08:00","end":"19:00","holiday":true},"4":{"start":"08:00","end":"19:00","holiday":false},"5":{"start":"08:00","end":"19:00","holiday":false},"6":{"start":"08:00","end":"19:00","holiday":false},"9":{"start":"08:00","end":"19:00","holiday":false},"10":{"start":"08:00","end":"19:00","holiday":false},"11":{"start":"08:00","end":"19:00","holiday":false},"12":{"start":"08:00","end":"20:00","holiday":false},"13":{"start":"08:00","end":"20:00","holiday":false},"16":{"start":"08:00","end":"19:00","holiday":false},"17":{"start":"08:00","end":"19:00","holiday":false},"18":{"start":"08:00","end":"19:00","holiday":false},"19":{"start":"08:00","end":"19:00","holiday":false},"20":{"start":"08:00","end":"19:00","holiday":false},"23":{"start":"08:00","end":"19:00","holiday":false},"24":{"start":"08:00","end":"19:00","holiday":false},"25":{"start":"08:00","end":"19:00","holiday":false},"26":{"start":"08:00","end":"19:00","holiday":false},"27":{"start":"08:00","end":"19:00","holiday":false},"30":{"start":"08:00","end":"19:00","holiday":false},"31":{"start":"08:00","end":"19:00","holiday":false}},"107_2026_03":{"1":{"start":"18:00","end":"24:00","holiday":false},"2":{"start":"24:00","end":"09:00","nextDay":true,"holiday":true},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"19:00","holiday":false},"5":{"start":"09:00","end":"19:00","holiday":false},"6":{"start":"17:00","end":"24:00","holiday":false},"7":{"start":"00:00","end":"09:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"17:00","end":"24:00","holiday":false},"11":{"start":"00:00","end":"09:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"14":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"21:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"16:00","end":"24:00","holiday":false},"22":{"start":"00:00","end":"08:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"25":{"start":"17:00","end":"24:00","holiday":false},"26":{"start":"00:00","end":"09:00","holiday":false},"27":{"start":"09:00","end":"20:00","holiday":false},"28":{"start":"07:00","end":"18:00","holiday":false},"30":{"start":"17:00","end":"24:00","holiday":false},"31":{"start":"00:00","end":"09:00","holiday":false}},"108_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"08:00","end":"18:00","holiday":false},"7":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"22":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"109_2026_03":{"1":{"start":"09:00","end":"18:00","holiday":false},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"19:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"08:00","end":"18:00","holiday":false},"27":{"start":"08:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false}},"110_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"20:00","holiday":false},"6":{"start":"08:00","end":"19:00","holiday":false},"9":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"10":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"08:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"09:00","end":"18:00","holiday":false},"22":{"start":"09:00","end":"20:00","holiday":false},"23":{"start":"07:00","end":"22:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"111_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"20:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"20:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"112_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"07:00","end":"18:00","holiday":false},"7":{"start":"19:00","end":"24:00","holiday":false},"8":{"start":"00:00","end":"08:00","holiday":false},"9":{"start":"17:00","end":"24:00","holiday":false},"10":{"start":"00:00","end":"09:00","holiday":false},"11":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"12":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"13":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"15":{"start":"08:00","end":"17:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"06:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"19:00","holiday":false},"21":{"start":"15:00","end":"24:00","holiday":false},"22":{"start":"00:00","end":"08:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"08:00","end":"18:00","holiday":false},"28":{"start":"10:00","end":"19:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"17:00","end":"24:00","holiday":false}},"113_2026_03":{"2":{"start":"09:00","end":"19:00","holiday":true},"3":{"start":"08:00","end":"18:00","holiday":true},"4":{"start":"07:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"08:00","end":"19:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"22":{"start":"08:00","end":"18:00","holiday":false},"23":{"start":"08:00","end":"20:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"08:00","end":"19:00","holiday":false},"30":{"start":"09:00","end":"19:00","holiday":false},"31":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false}},"114_2026_03":{"2":{"start":"18:00","end":"24:00","holiday":true},"3":{"start":"00:00","end":"09:00","holiday":true},"4":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"5":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"17:00","end":"24:00","holiday":false},"13":{"start":"00:00","end":"09:00","holiday":false},"15":{"start":"18:00","end":"24:00","holiday":false},"16":{"start":"00:00","end":"09:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"22":{"start":"18:00","end":"24:00","holiday":false},"23":{"start":"00:00","end":"09:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"17:00","end":"24:00","holiday":false},"27":{"start":"00:00","end":"09:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"115_2026_03":{"3":{"start":"08:00","end":"19:00","holiday":true},"4":{"start":"08:00","end":"19:00","holiday":false},"5":{"start":"08:00","end":"19:00","holiday":false},"6":{"start":"08:00","end":"19:00","holiday":false},"9":{"start":"08:00","end":"19:00","holiday":false},"10":{"start":"08:00","end":"19:00","holiday":false},"11":{"start":"08:00","end":"19:00","holiday":false},"12":{"start":"08:00","end":"19:00","holiday":false},"13":{"start":"08:00","end":"19:00","holiday":false},"16":{"start":"08:00","end":"19:00","holiday":false},"17":{"start":"08:00","end":"19:00","holiday":false},"18":{"start":"08:00","end":"19:00","holiday":false},"19":{"start":"08:00","end":"19:00","holiday":false},"20":{"start":"08:00","end":"19:00","holiday":false},"23":{"start":"08:00","end":"19:00","holiday":false},"24":{"start":"08:00","end":"19:00","holiday":false},"25":{"start":"08:00","end":"19:00","holiday":false},"26":{"start":"08:00","end":"19:00","holiday":false},"27":{"start":"08:00","end":"19:00","holiday":false},"30":{"start":"08:00","end":"19:00","holiday":false},"31":{"start":"08:00","end":"19:00","holiday":false}},"116_2026_03":{"3":{"start":"17:00","end":"24:00","holiday":true},"4":{"start":"00:00","end":"09:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"7":{"start":"19:00","end":"24:00","holiday":false},"8":{"start":"00:00","end":"08:00","holiday":false},"9":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"17:00","end":"24:00","holiday":false},"18":{"start":"00:00","end":"09:00","holiday":false},"19":{"start":"07:00","end":"20:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"12:00","end":"23:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"17:00","end":"24:00","holiday":false},"28":{"start":"00:00","end":"09:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"117_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"19:00","holiday":false},"5":{"start":"08:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"7":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"08:00","end":"18:00","holiday":false},"11":{"start":"08:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"14":{"start":"13:00","end":"21:00","holiday":false},"16":{"start":"09:00","end":"19:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"08:00","end":"18:00","holiday":false},"23":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"24":{"start":"09:00","end":"19:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"08:00","end":"18:00","holiday":false},"30":{"start":"08:00","end":"19:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"118_2026_03":{"1":{"start":"00:00","end":"08:00","holiday":false},"2":{"start":"18:00","end":"24:00","holiday":true},"3":{"start":"00:00","end":"09:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"8":{"start":"08:00","end":"17:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"17:00","end":"24:00","holiday":false},"13":{"start":"00:00","end":"09:00","holiday":false},"16":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"17:00","end":"24:00","holiday":false},"19":{"start":"00:00","end":"09:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"22":{"start":"18:00","end":"24:00","holiday":false},"23":{"start":"00:00","end":"09:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"08:00","end":"18:00","holiday":false}},"119_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"08:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"08:00","end":"24:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"08:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"120_2026_03":{"1":{"start":"09:00","end":"18:00","holiday":false},"3":{"start":"09:00","end":"19:00","holiday":true},"4":{"start":"09:00","end":"19:00","holiday":false},"5":{"start":"09:00","end":"19:00","holiday":false},"6":{"start":"08:00","end":"19:00","holiday":false},"9":{"start":"08:00","end":"19:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"08:00","end":"19:00","holiday":false},"16":{"start":"08:00","end":"18:00","holiday":false},"17":{"start":"08:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"08:00","end":"18:00","holiday":false},"20":{"start":"08:00","end":"18:00","holiday":false},"23":{"start":"08:00","end":"19:00","holiday":false},"24":{"start":"08:00","end":"19:00","holiday":false},"25":{"start":"08:00","end":"19:00","holiday":false},"26":{"start":"08:00","end":"21:00","holiday":false},"27":{"start":"08:00","end":"19:00","holiday":false},"28":{"start":"09:00","end":"18:00","holiday":false},"29":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"08:00","end":"18:00","holiday":false},"31":{"start":"08:00","end":"18:00","holiday":false}},"121_2026_03":{"2":{"start":"09:00","end":"18:00","holiday":true},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"18:00","end":"24:00","holiday":false},"5":{"start":"00:00","end":"09:00","holiday":false},"6":{"start":"07:00","end":"19:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"08:00","end":"17:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"06:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"14":{"start":"19:00","end":"24:00","holiday":false},"15":{"start":"00:00","end":"08:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"19:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"22":{"start":"08:00","end":"17:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"17:00","end":"24:00","holiday":false},"25":{"start":"00:00","end":"09:00","holiday":false},"26":{"start":"17:00","end":"24:00","holiday":false},"27":{"start":"00:00","end":"09:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"122_2026_03":{"3":{"start":"08:00","end":"17:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"07:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"17:00","end":"24:00","holiday":false},"12":{"start":"00:00","end":"09:00","holiday":false},"13":{"start":"17:00","end":"24:00","holiday":false},"14":{"start":"00:00","end":"09:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"08:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"17:00","end":"24:00","holiday":false},"20":{"start":"00:00","end":"09:00","holiday":false},"23":{"start":"08:00","end":"17:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"19:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"29":{"start":"18:00","end":"24:00","holiday":false},"30":{"start":"00:00","end":"09:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"123_2026_03":{"1":{"start":"18:00","end":"24:00","holiday":false},"2":{"start":"00:00","end":"09:00","holiday":true},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"08:00","end":"17:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"8":{"start":"18:00","end":"24:00","holiday":false},"9":{"start":"00:00","end":"09:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"08:00","end":"17:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"08:00","end":"18:00","holiday":false},"18":{"start":"17:00","end":"24:00","holiday":false},"19":{"start":"00:00","end":"09:00","holiday":false},"20":{"start":"08:00","end":"17:00","holiday":false},"21":{"start":"12:00","end":"23:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"19:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"19:00","end":"24:00","holiday":false},"29":{"start":"00:00","end":"08:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"124_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"5":{"start":"17:00","end":"24:00","holiday":false},"6":{"start":"00:00","end":"09:00","holiday":false},"9":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"17:00","end":"24:00","holiday":false},"12":{"start":"00:00","end":"09:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"17":{"start":"17:00","end":"24:00","holiday":false},"18":{"start":"00:00","end":"09:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"17:00","end":"24:00","holiday":false},"28":{"start":"00:00","end":"09:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"17:00","end":"24:00","holiday":false}},"125_2026_03":{"2":{"start":"09:00","end":"18:00","holiday":true},"3":{"start":"09:00","end":"21:00","holiday":true},"4":{"start":"13:00","end":"22:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"7":{"start":"09:00","end":"18:00","holiday":false},"8":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"19:00","holiday":false},"10":{"start":"09:00","end":"19:00","holiday":false},"11":{"start":"09:00","end":"19:00","holiday":false},"12":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"13":{"start":"09:00","end":"19:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"08:00","end":"18:00","holiday":false},"25":{"start":"08:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"20:00","holiday":false},"31":{"start":"09:00","end":"19:00","holiday":false}},"126_2026_03":{"3":{"start":"09:00","end":"24:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"21:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"10":{"start":"17:00","end":"24:00","holiday":false},"11":{"start":"00:00","end":"09:00","holiday":false},"12":{"start":"08:00","end":"20:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"14":{"start":"10:00","end":"19:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"08:00","end":"17:00","holiday":false},"18":{"start":"09:00","end":"19:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"17:00","end":"24:00","holiday":false},"21":{"start":"00:00","end":"09:00","holiday":false},"23":{"start":"17:00","end":"24:00","holiday":false},"24":{"start":"00:00","end":"09:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"08:00","end":"18:00","holiday":false},"30":{"start":"17:00","end":"24:00","holiday":false},"31":{"start":"00:00","end":"09:00","holiday":false}},"127_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"19:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"17:00","end":"24:00","holiday":false},"7":{"start":"00:00","end":"09:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"08:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"19:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"17:00","end":"24:00","holiday":false},"17":{"start":"00:00","end":"09:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"07:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"19:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"19:00","holiday":false},"27":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"30":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"128_2026_03":{"1":{"start":"13:00","end":"21:00","holiday":false},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"08:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"19:00","holiday":false},"10":{"start":"09:00","end":"19:00","holiday":false},"11":{"start":"09:00","end":"22:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"19:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"19:00","holiday":false},"18":{"start":"09:00","end":"19:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"09:00","end":"22:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"19:00","holiday":false},"27":{"start":"09:00","end":"19:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"129_2026_03":{"3":{"start":"07:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"19:00","holiday":false},"5":{"start":"08:00","end":"17:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"7":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"08:00","end":"20:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"13:00","end":"22:00","holiday":false},"16":{"start":"13:00","end":"22:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"08:00","end":"18:00","holiday":false},"19":{"start":"08:00","end":"17:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"07:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"25":{"start":"08:00","end":"17:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"29":{"start":"08:00","end":"17:00","holiday":false},"30":{"start":"08:00","end":"17:00","holiday":false},"31":{"start":"13:00","end":"22:00","holiday":false}},"130_2026_03":{"3":{"start":"13:00","end":"23:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"08:00","end":"17:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"13:00","end":"22:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"08:00","end":"17:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"08:00","end":"17:00","holiday":false},"23":{"start":"13:00","end":"22:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"08:00","end":"17:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"08:00","end":"18:00","holiday":false}},"131_2026_03":{"1":{"start":"08:00","end":"18:00","holiday":false},"2":{"start":"13:00","end":"21:00","holiday":true},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"13:00","end":"22:00","holiday":false},"5":{"start":"08:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"8":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"08:00","end":"22:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"13:00","end":"22:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"08:00","end":"18:00","holiday":false},"15":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"20:00","holiday":false},"18":{"start":"09:00","end":"19:00","holiday":false},"19":{"start":"13:00","end":"22:00","holiday":false},"20":{"start":"09:00","end":"19:00","holiday":false},"21":{"start":"13:00","end":"24:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"13:00","end":"22:00","holiday":false},"25":{"start":"08:00","end":"17:00","holiday":false},"26":{"start":"08:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"29":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"20:00","holiday":false},"31":{"start":"08:00","end":"17:00","holiday":false}},"132_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"07:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"12":{"start":"09:00","end":"20:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"14":{"start":"09:00","end":"18:00","holiday":false},"15":{"start":"09:00","end":"19:00","holiday":false},"16":{"start":"09:00","end":"19:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"19:00","holiday":false},"20":{"start":"09:00","end":"19:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"08:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"19:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"133_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"07:00","end":"22:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"19:00","holiday":false},"26":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"27":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"134_2026_03":{"3":{"start":"08:00","end":"17:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"08:00","end":"17:00","holiday":false},"10":{"start":"13:00","end":"22:00","holiday":false},"11":{"start":"08:00","end":"18:00","holiday":false},"13":{"start":"09:00","end":"20:00","holiday":false},"14":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"08:00","end":"17:00","holiday":false},"17":{"start":"09:00","end":"20:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"07:00","end":"18:00","holiday":false},"20":{"start":"13:00","end":"22:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"19:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"07:00","end":"18:00","holiday":false},"27":{"start":"06:00","end":"18:00","holiday":false},"28":{"start":"09:00","end":"20:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"08:00","end":"17:00","holiday":false}},"135_2026_03":{"1":{"start":"09:00","end":"18:00","holiday":false},"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"07:00","end":"18:00","holiday":false},"5":{"start":"13:00","end":"22:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"08:00","end":"20:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"08:00","end":"17:00","holiday":false},"13":{"start":"13:00","end":"22:00","holiday":false},"14":{"start":"13:00","end":"21:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"19:00","holiday":false},"19":{"start":"07:00","end":"18:00","holiday":false},"20":{"start":"13:00","end":"22:00","holiday":false},"23":{"start":"08:00","end":"18:00","holiday":false},"24":{"start":"07:00","end":"18:00","holiday":false},"25":{"start":"13:00","end":"22:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"19:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"20:00","holiday":false}},"136_2026_03":{"3":{"start":"00:00","end":"00:00","nextDay":true,"holiday":true},"4":{"start":"13:00","end":"22:00","holiday":false},"5":{"start":"08:00","end":"18:00","holiday":false},"6":{"start":"08:00","end":"17:00","holiday":false},"8":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"13:00","end":"22:00","holiday":false},"13":{"start":"08:00","end":"17:00","holiday":false},"16":{"start":"13:00","end":"22:00","holiday":false},"17":{"start":"09:00","end":"19:00","holiday":false},"18":{"start":"09:00","end":"19:00","holiday":false},"19":{"start":"09:00","end":"19:00","holiday":false},"20":{"start":"06:00","end":"20:00","holiday":false},"22":{"start":"13:00","end":"21:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"13:00","end":"22:00","holiday":false},"27":{"start":"08:00","end":"19:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"137_2026_03":{"3":{"start":"13:00","end":"22:00","holiday":true},"4":{"start":"09:00","end":"19:00","holiday":false},"5":{"start":"09:00","end":"21:00","holiday":false},"6":{"start":"09:00","end":"19:00","holiday":false},"7":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"08:00","end":"17:00","holiday":false},"10":{"start":"09:00","end":"18:00","holiday":false},"11":{"start":"13:00","end":"24:00","holiday":false},"12":{"start":"09:00","end":"18:00","holiday":false},"13":{"start":"08:00","end":"17:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"13:00","end":"23:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"08:00","end":"17:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"13:00","end":"23:00","holiday":false},"23":{"start":"13:00","end":"22:00","holiday":false},"24":{"start":"08:00","end":"17:00","holiday":false},"25":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"26":{"start":"13:00","end":"22:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"13:00","end":"22:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"138_2026_03":{"2":{"start":"09:00","end":"18:00","holiday":true},"3":{"start":"09:00","end":"24:00","holiday":true},"4":{"start":"13:00","end":"22:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"08:00","end":"17:00","holiday":false},"8":{"start":"13:00","end":"22:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"08:00","end":"17:00","holiday":false},"11":{"start":"07:00","end":"18:00","holiday":false},"12":{"start":"08:00","end":"18:00","holiday":false},"13":{"start":"13:00","end":"22:00","holiday":false},"15":{"start":"13:00","end":"21:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"08:00","end":"18:00","holiday":false},"18":{"start":"13:00","end":"22:00","holiday":false},"19":{"start":"08:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"08:00","end":"17:00","holiday":false},"25":{"start":"08:00","end":"19:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"28":{"start":"13:00","end":"21:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"139_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"08:00","end":"17:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"13:00","end":"23:00","holiday":false},"7":{"start":"10:00","end":"19:00","holiday":false},"9":{"start":"13:00","end":"23:00","holiday":false},"10":{"start":"09:00","end":"21:00","holiday":false},"11":{"start":"08:00","end":"17:00","holiday":false},"12":{"start":"09:00","end":"19:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"13:00","end":"22:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"08:00","end":"17:00","holiday":false},"19":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"21":{"start":"13:00","end":"24:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"08:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"08:00","end":"18:00","holiday":false},"27":{"start":"13:00","end":"22:00","holiday":false},"29":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"140_2026_03":{"3":{"start":"09:00","end":"19:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"13:00","end":"22:00","holiday":false},"7":{"start":"13:00","end":"21:00","holiday":false},"9":{"start":"08:00","end":"20:00","holiday":false},"10":{"start":"13:00","end":"22:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"07:00","end":"21:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"18:00","holiday":false},"17":{"start":"13:00","end":"22:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"08:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"22":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"08:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"19:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"13:00","end":"22:00","holiday":false},"30":{"start":"08:00","end":"17:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"141_2026_03":{"3":{"start":"09:00","end":"18:00","holiday":true},"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"07:00","end":"20:00","holiday":false},"6":{"start":"13:00","end":"22:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"07:00","end":"18:00","holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"09:00","end":"21:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"15":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"09:00","end":"19:00","holiday":false},"17":{"start":"08:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"13:00","end":"22:00","holiday":false},"25":{"start":"09:00","end":"18:00","holiday":false},"26":{"start":"09:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"29":{"start":"13:00","end":"21:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"142_2026_03":{"4":{"start":"09:00","end":"18:00","holiday":false},"5":{"start":"09:00","end":"18:00","holiday":false},"6":{"start":"09:00","end":"18:00","holiday":false},"9":{"start":"09:00","end":"18:00","holiday":false},"10":{"start":"00:00","end":"00:00","nextDay":true,"holiday":false},"11":{"start":"09:00","end":"18:00","holiday":false},"12":{"start":"08:00","end":"17:00","holiday":false},"13":{"start":"09:00","end":"18:00","holiday":false},"16":{"start":"08:00","end":"17:00","holiday":false},"17":{"start":"09:00","end":"18:00","holiday":false},"18":{"start":"09:00","end":"18:00","holiday":false},"19":{"start":"09:00","end":"18:00","holiday":false},"20":{"start":"09:00","end":"18:00","holiday":false},"23":{"start":"09:00","end":"18:00","holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"09:00","end":"22:00","holiday":false},"26":{"start":"08:00","end":"18:00","holiday":false},"27":{"start":"09:00","end":"18:00","holiday":false},"30":{"start":"09:00","end":"18:00","holiday":false},"31":{"start":"09:00","end":"18:00","holiday":false}},"201_2026_03":{},"202_2026_03":{},"203_2026_03":{},"204_2026_03":{},"205_2026_03":{},"206_2026_03":{},"301_2026_03":{},"302_2026_03":{},"303_2026_03":{},"304_2026_03":{},"305_2026_03":{},"400_2026_03":{},"401_2026_03":{},"1_2026_02":{"2":{"start":"09:00","end":"19:00","holiday":false},"3":{"start":"10:00","end":"20:00","holiday":false},"4":{"start":"10:00","end":"21:00","holiday":false},"5":{"start":"10:00","end":"20:00","holiday":false},"6":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"8":{"start":"11:00","end":"22:00","holiday":false},"9":{"start":"14:00","end":"22:00","holiday":false},"10":{"start":"14:00","end":"22:00","holiday":false},"11":{"start":"14:00","end":"22:00","holiday":false},"12":{"start":"10:00","end":"20:00","holiday":false},"13":{"start":"09:00","end":"20:00","holiday":false},"15":{"start":"09:00","end":"20:00","holiday":false},"16":{"start":"11:00","end":"22:00","holiday":true},"17":{"start":"20:00","end":"09:00","nextDay":true,"holiday":true},"18":{"start":"11:00","end":"20:00","holiday":false},"19":{"start":"14:00","end":"22:00","holiday":false},"20":{"start":"14:00","end":"22:00","holiday":false},"21":{"start":"20:00","end":"","holiday":false},"23":{"start":"20:00","end":"09:00","nextDay":true,"holiday":false},"24":{"start":"09:00","end":"18:00","holiday":false},"25":{"start":"14:00","end":"22:00","holiday":false},"26":{"start":"11:00","end":"20:00","holiday":false},"27":{"start":"11:00","end":"20:00","holiday":false},"28":{"start":"11:00","end":"22:00","holiday":false}},"2_2026_02":{},"3_2026_02":{},"4_2026_02":{},"5_2026_02":{},"6_2026_02":{},"7_2026_02":{},"8_2026_02":{},"9_2026_02":{},"10_2026_02":{},"11_2026_02":{},"12_2026_02":{},"13_2026_02":{},"101_2026_02":{},"102_2026_02":{},"103_2026_02":{},"104_2026_02":{},"105_2026_02":{},"106_2026_02":{},"107_2026_02":{},"108_2026_02":{},"109_2026_02":{},"110_2026_02":{},"111_2026_02":{},"112_2026_02":{},"113_2026_02":{},"114_2026_02":{},"115_2026_02":{},"116_2026_02":{},"117_2026_02":{},"118_2026_02":{},"119_2026_02":{},"120_2026_02":{},"121_2026_02":{},"122_2026_02":{},"123_2026_02":{},"124_2026_02":{},"125_2026_02":{},"126_2026_02":{},"127_2026_02":{},"128_2026_02":{},"129_2026_02":{},"130_2026_02":{},"131_2026_02":{},"132_2026_02":{},"133_2026_02":{},"134_2026_02":{},"135_2026_02":{},"136_2026_02":{},"137_2026_02":{},"138_2026_02":{},"139_2026_02":{},"140_2026_02":{},"141_2026_02":{},"142_2026_02":{},"201_2026_02":{},"202_2026_02":{},"203_2026_02":{},"204_2026_02":{},"205_2026_02":{},"206_2026_02":{},"301_2026_02":{},"302_2026_02":{},"303_2026_02":{},"304_2026_02":{},"305_2026_02":{},"400_2026_02":{},"401_2026_02":{}}');
 const INITIAL_HISTORY = JSON.parse('[{"date":"2026-04-13","type":"교체","name":"이민주","role":"인제스트","subtype":"","grade":"나","prev":"김정윤","reason":"계약만료"},{"date":"2026-04-13","type":"교체","name":"이소연","role":"인제스트","subtype":"","grade":"나","prev":"남유림","reason":"교체"}]');
 let workers = [
-  {id:1,code:"90011862",name:"김정윤",birth:"2002-02-20",type:"인제스트",subtype:"",grade:"가",start:"2024-04-16",end:"2026-04-15",agency:"MJ플렉스",fee:3086270,phone:"010-9948-8830",addr:"서울시 상서구 화곡동 1110",badge:"4898",status:"계약종료",note:"",replacedBy:"이민주"},
+  {id:1,code:"90011862",name:"김정윤",birth:"2002-02-20",type:"인제스트",subtype:"",grade:"가",start:"2024-04-16",end:"2026-04-15",agency:"MJ플렉스",fee:3086270,phone:"010-9948-8830",addr:"서울시 상서구 화곡동 1110",badge:"4898",status:"근무중",note:"",replacedBy:""},
   {id:2,code:"90011937",name:"임민영",birth:"1999-09-27",type:"인제스트",subtype:"",grade:"가",start:"2024-08-20",end:"2026-08-19",agency:"모닝인",fee:3086270,phone:"010-8794-7096",addr:"인천시 남동구 남촌동 75번길 3-1 태성하이츠빌 B동",badge:"5031",status:"근무중",note:"",replacedBy:""},
   {id:3,code:"90011981",name:"이소현",birth:"1996-10-26",type:"인제스트",subtype:"",grade:"가",start:"2024-10-15",end:"2026-10-14",agency:"KBS시큐리티",fee:3086270,phone:"010-2541-8760",addr:"서울시 강서구 강서로5가길 56,403호",badge:"4854",status:"근무중",note:"",replacedBy:""},
   {id:4,code:"90011970",name:"이 원",birth:"1991-11-24",type:"인제스트",subtype:"",grade:"가",start:"2024-10-16",end:"2026-10-15",agency:"키스템프그룹",fee:3086270,phone:"010-8096-8884",addr:"서울시 중랑구 면복동 127-20번지 101호",badge:"5146",status:"근무중",note:"",replacedBy:""},
   {id:5,code:"90012031",name:"박민정",birth:"2000-03-04",type:"인제스트",subtype:"",grade:"가",start:"2025-01-06",end:"2027-01-05",agency:"프리머스HR",fee:3086270,phone:"010-9844-5758",addr:"서울시 은평구 서오릉로7길 9-19(역촌동,태영빌라)",badge:"4767",status:"근무중",note:"등급변경(1월6일)",replacedBy:""},
   {id:6,code:"90012078",name:"김선화",birth:"1996-03-25",type:"인제스트",subtype:"",grade:"가",start:"2025-03-05",end:"2027-03-04",agency:"키스템프그룹",fee:2999700,phone:"010-5273-3752",addr:"서울시 은평구 대조동 50-4",badge:"778",status:"근무중",note:"",replacedBy:""},
   {id:7,code:"90012111",name:"조수빈",birth:"1998-05-25",type:"인제스트",subtype:"",grade:"가",start:"2025-04-01",end:"2027-03-31",agency:"모닝인",fee:2999700,phone:"010-3348-7232",addr:"서울시 강서구 화곡로42길 20 더프라임 901호",badge:"4193",status:"근무중",note:"",replacedBy:""},
-  {id:8,code:"90012133",name:"남유림",birth:"2001-10-19",type:"인제스트",subtype:"",grade:"나",start:"2025-04-21",end:"2026-04-20",agency:"MJ플렉스",fee:2999700,phone:"010-2423-0975",addr:"서울시 마포구 서강로 75-16",badge:"3514",status:"계약종료",note:"",replacedBy:"이소연"},
+  {id:8,code:"90012133",name:"남유림",birth:"2001-10-19",type:"인제스트",subtype:"",grade:"나",start:"2025-04-21",end:"2026-04-20",agency:"MJ플렉스",fee:2999700,phone:"010-2423-0975",addr:"서울시 마포구 서강로 75-16",badge:"3514",status:"근무중",note:"",replacedBy:""},
   {id:9,code:"90012313",name:"김학겸",birth:"1992-03-23",type:"인제스트",subtype:"",grade:"나",start:"2026-01-30",end:"2027-01-29",agency:"크릭앤리버",fee:2999700,phone:"010-3095-1458",addr:"서울시 서초구 양재동 265-8",badge:"5294",status:"근무중",note:"",replacedBy:""},
   {id:10,code:"90012334",name:"박려원",birth:"1997-02-20",type:"인제스트",subtype:"",grade:"가",start:"2026-02-24",end:"2027-02-23",agency:"KBS시큐리티",fee:3086270,phone:"010-8769-4280",addr:"서울시 강서구 등촌동 640-13 플러스트윈빌 A동",badge:"842",status:"근무중",note:"",replacedBy:""},
   {id:11,code:"90012333",name:"백수아",birth:"2001-09-10",type:"인제스트",subtype:"",grade:"나",start:"2026-02-24",end:"2027-02-23",agency:"MJ플렉스",fee:2999700,phone:"010-4993-8925",addr:"경기도 고양시 덕양구 화신로 340, 714동 802호",badge:"178",status:"근무중",note:"",replacedBy:""},
@@ -963,14 +728,13 @@ let workers = [
   {id:303,code:"90012123",name:"박지수",birth:"1997-07-04",type:"촬영보조",subtype:"스포츠",grade:"가",start:"2025-04-07",end:"2026-04-06",agency:"키스템프그룹",fee:3086270,phone:"010-3743-4664",addr:"서울시 양천구 신월동 443-6 엘리시안 201호",badge:"4369",status:"근무중",note:"데스크",replacedBy:""},
   {id:304,code:"90012057",name:"이선재",birth:"2001-12-19",type:"촬영보조",subtype:"스포츠",grade:"가",start:"2025-02-10",end:"2027-02-09",agency:"모닝인",fee:3086270,phone:"010-9592-5600",addr:"서울시 관악구 신림동459-42 104호",badge:"4711",status:"근무중",note:"",replacedBy:""},
   {id:305,code:"90012250",name:"정예준",birth:"2004-11-13",type:"촬영보조",subtype:"스포츠",grade:"가",start:"2025-10-13",end:"2026-10-12",agency:"키스템프그룹",fee:3086270,phone:"010-8707-9857",addr:"서울시 강서구 방화대로 8길 50",badge:"4229",status:"근무중",note:"",replacedBy:""},
-  // ─── 교체 투입자 ──────────────────────────────────────────
-  {id:400,code:"2026-067",name:"이민주",birth:"1996-09-27",type:"인제스트",subtype:"",grade:"나",start:"2026-04-16",end:"2027-04-15",agency:"키스템프그룹",fee:2999700,phone:"010-7471-8500",addr:"경기도 부천시 부일로 330 번길 9",badge:"",status:"근무중",note:"",replacedBy:"",dept:"뉴스영상콘텐츠부"},
-  {id:401,code:"2026-068",name:"이소연",birth:"1994-03-25",type:"인제스트",subtype:"",grade:"나",start:"2026-04-20",end:"2027-04-19",agency:"MJ플렉스",fee:2999700,phone:"010-3640-3364",addr:"서울시 관악구 봉천동 673-230 나동 102 호 ",badge:"",status:"근무중",note:"",replacedBy:"",dept:"뉴스영상콘텐츠부"},
 ];
 
-let history = [];
+let history = [,
+  {id:400,code:"2026-067",name:"이민주",birth:"1996-09-27",type:"인제스트",subtype:"",grade:"나",start:"2026-04-16",end:"2027-04-15",agency:"키스템프그룹",fee:2999700,phone:"010-7471-8500",addr:"경기도 부천시 부일로 330 번길 9",status:"근무중",note:""},
+  {id:401,code:"2026-068",name:"이소연",birth:"1994-03-25",type:"인제스트",subtype:"",grade:"나",start:"2026-04-20",end:"2027-04-19",agency:"MJ플렉스",fee:2999700,phone:"010-3640-3364",addr:"서울시 관악구 봉천동 673-230 나동 102 호 ",status:"근무중",note:""}];
 let filterDept = ''; // 현재 선택된 부서 탭
-let nextId = 402, nextSeq = 69, editId = null, replaceTargetId = null, curPage = 1;
+let nextId = 400, nextSeq = 67, editId = null, replaceTargetId = null, curPage = 1;
 let excelHeaders=[], excelRows=[], colMap={};
 
 // ─── 유틸 ────────────────────────────────────────────────
@@ -1677,12 +1441,11 @@ function doReplace() {
   const old=workers.find(x=>x.id===replaceTargetId);
   const grade=document.getElementById('r-grade').value;
   old.status='계약종료'; old.replacedBy=name;
-  const newDept = document.getElementById('r-dept')?.value || old.dept || '';
   workers.push({id:nextId++,code:document.getElementById('r-code').value||genCode(),badge:document.getElementById('r-badge')?.value||'',name,
     birth:document.getElementById('r-birth').value,type,subtype,grade,start,end,
     agency:document.getElementById('r-agency').value,fee:Number(document.getElementById('r-fee').value)||0,
     phone:document.getElementById('r-phone').value,addr:document.getElementById('r-addr').value,
-    dept:newDept,status:'근무중',note:'',replacedBy:''});
+    status:'근무중',note:'',replacedBy:''});
   history.push({date:today,type:'교체',name,role:type,subtype,grade,prev:old.name,reason:document.getElementById('r-reason').value||'교체'});
   nextSeq++;
   document.getElementById('modal-replace').style.display='none';
@@ -4299,6 +4062,7 @@ initSelects();
 renderSummary();
 renderTable();
 </script>
+
 <!-- 데이터 관리 모달 -->
 <div class="modal-bg" id="modal-data" style="display:none">
   <div class="modal" style="max-width:520px">
@@ -4626,7 +4390,5 @@ function doGet(e) {
   </div>
 </div>
 
-</body>
-</html>
 </body>
 </html>

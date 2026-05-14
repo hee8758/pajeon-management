@@ -1,0 +1,447 @@
+
+<div class="app">
+  <div class="app-header">
+    <div>
+      <h1>🎬 KBS 보도영상국 파견인력 관리 시스템</h1>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-left:auto">
+      <span id="save-status" style="font-size:11px;color:#aaa"></span>
+      <button onclick="openDataMgr()" style="padding:7px 14px;background:#f5f5f3;border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer;color:#666;font-weight:500">💾 데이터 관리</button>
+      <span class="subtitle">뉴스영상콘텐츠부 · 인제스트 &amp; 촬영보조</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showPage('list')">직원 현황</button>
+    <button class="tab" onclick="showPage('history')">교체 이력</button>
+    <button class="tab" onclick="showPage('agency')">파견업체</button>
+    <button class="tab" onclick="showPage('pay')">파견료 정산</button>
+    <button class="tab" onclick="showPage('rank')">📊 통계</button>
+  </div>
+
+  <!-- 직원현황 -->
+  <div id="page-list" class="page active">
+    <div class="summary" id="summary"></div>
+    <!-- 부서 탭 -->
+    <div class="dept-tabs" id="dept-tabs">
+      <button class="dept-tab active" onclick="setDeptTab('')">전체</button>
+      <button class="dept-tab d1" onclick="setDeptTab('영상취재1부')">📹 영상취재1부</button>
+      <button class="dept-tab d2" onclick="setDeptTab('영상취재2부')">📹 영상취재2부</button>
+      <button class="dept-tab d3" onclick="setDeptTab('뉴스영상콘텐츠부')">🎬 뉴스영상콘텐츠부</button>
+    </div>
+    <div class="sec-header">
+      <h2>파견직 인력 현황 <span id="total-cnt" style="font-size:13px;font-weight:400;color:#888"></span></h2>
+      <div class="header-btns">
+        <button class="btn btn-template" onclick="downloadTemplate()">📋 양식 다운로드</button>
+        <button class="btn btn-import" onclick="openImport()">📥 엑셀 가져오기</button>
+        <button class="btn btn-export" onclick="exportExcel()">📤 엑셀 내보내기</button>
+        <button class="btn btn-primary" onclick="openModal('add')">+ 신규 등록</button>
+      </div>
+    </div>
+    <div class="filter-row">
+      <input type="text" id="filter-search" placeholder="🔍 이름 검색" oninput="renderTable()">
+      <select id="filter-type" onchange="onFilterType()">
+        <option value="">전체 직군</option>
+        <option value="촬영보조">촬영보조</option>
+        <option value="인제스트">인제스트</option>
+      </select>
+      <select id="filter-sub" onchange="renderTable()" style="display:none">
+        <option value="">전체 세부구분</option>
+        <option value="데일리">데일리</option>
+        <option value="특집">특집</option>
+        <option value="스포츠">스포츠</option>
+      </select>
+      <select id="filter-grade" onchange="renderTable()">
+        <option value="">전체 등급</option>
+        <option value="가">가 등급</option>
+        <option value="나">나 등급</option>
+      </select>
+      <select id="filter-agency" onchange="renderTable()"><option value="">전체 파견업체</option></select>
+      <select id="filter-status" onchange="renderTable()">
+        <option value="">전체 상태</option>
+        <option value="근무중">근무중</option>
+        <option value="계약종료">계약종료</option>
+      </select>
+    </div>
+    <div class="tbl-wrap" id="table-wrap"></div>
+    <div class="pagination" id="pagination"></div>
+  </div>
+
+  <!-- 교체이력 -->
+  <div id="page-history" class="page">
+    <div class="sec-header"><h2>교체 이력</h2></div>
+    <div id="history-list" style="background:#fff;border:1px solid #eee;border-radius:10px;padding:1rem"></div>
+  </div>
+
+
+  <!-- 통계 탭 -->
+  <div id="page-rank" class="page">
+    <div class="sec-header">
+      <h2>📊 월별 시간외 근무 순위</h2>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap">
+      <select id="rank-year" onchange="renderRank()" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a"></select>
+      <select id="rank-month" onchange="renderRank()" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a"></select>
+      <select id="rank-type" onchange="renderRank()" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a">
+        <option value="">전체 직군</option>
+        <option value="촬영보조">촬영보조</option>
+        <option value="인제스트">인제스트</option>
+      </select>
+      <select id="rank-dept" onchange="renderRank()" style="padding:7px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a">
+        <option value="">전체 부서</option>
+        <option value="영상취재1부">영상취재1부</option>
+        <option value="영상취재2부">영상취재2부</option>
+        <option value="뉴스영상콘텐츠부">뉴스영상콘텐츠부</option>
+      </select>
+    </div>
+    <div id="rank-summary" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.4rem"></div>
+    <div id="rank-content"></div>
+  </div>
+
+  <!-- 파견료 정산 -->
+  <div id="page-pay" class="page">
+
+    <!-- 목록 뷰 -->
+    <div id="pay-list-view">
+      <!-- 상단 컨트롤 -->
+      <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:1.2rem">
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font-size:11px;color:#888;font-weight:500">연도</label>
+          <select id="pay-year" onchange="renderPayList()" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a">
+            <option value="2024">2024년</option><option value="2025">2025년</option><option value="2026" selected>2026년</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font-size:11px;color:#888;font-weight:500">월</label>
+          <select id="pay-month" onchange="renderPayList()" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a"></select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font-size:11px;color:#888;font-weight:500">직군</label>
+          <select id="pay-filter" onchange="renderPayList()" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a">
+            <option value="">전체</option><option value="인제스트">인제스트</option><option value="촬영보조">촬영보조</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font-size:11px;color:#888;font-weight:500">부서</label>
+          <select id="pay-dept" onchange="renderPayList()" style="padding:7px 10px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a">
+            <option value="">전체</option>
+            <option value="영상취재1부">영상취재1부</option>
+            <option value="영상취재2부">영상취재2부</option>
+            <option value="뉴스영상콘텐츠부">뉴스영상콘텐츠부</option>
+          </select>
+        </div>
+        <button onclick="openWageSetting()" style="padding:8px 16px;background:none;border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer;color:#666;height:38px">임금 설정</button>
+        <div style="display:flex;gap:6px">
+          <input type="file" id="att-excel-input" accept=".xlsx,.xls" style="display:none" onchange="importAttendance(this)">
+          <button onclick="document.getElementById('att-excel-input').click()"
+            style="padding:8px 14px;background:#E1F5EE;color:#0F6E56;border:1px solid #9FE1CB;border-radius:8px;font-size:12px;cursor:pointer;font-weight:500;height:38px">
+            📊 엑셀 업로드
+          </button>
+          <input type="file" id="att-pdf-input" accept=".pdf" multiple style="display:none" onchange="importAttendancePDF(this)">
+          <button onclick="document.getElementById('att-pdf-input').click()"
+            style="padding:8px 14px;background:#EEEDFE;color:#534AB7;border:1px solid #AFA9EC;border-radius:8px;font-size:12px;cursor:pointer;font-weight:500;height:38px">
+            📄 PDF 업로드 (다중)
+          </button>
+        </div>
+        <button onclick="openInvoiceModal()"
+          style="padding:8px 16px;background:#534AB7;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-weight:500;height:38px">
+          🖨 청구내역서 출력
+        </button>
+        <div id="att-result" style="display:none;padding:7px 14px;border-radius:8px;font-size:12px;align-items:center;gap:8px"></div>
+      </div>
+
+      <!-- 임금 설정 패널 -->
+      <div id="wage-panel" style="display:none;background:#fff;border:1px solid #eee;border-radius:12px;padding:1.25rem;margin-bottom:1.2rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+          <span style="font-size:13px;font-weight:500">연도별 임금 설정</span>
+          <div style="display:flex;gap:8px">
+            <button onclick="autoCalcHourly()" style="padding:6px 12px;background:none;border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer;color:#666">시급 자동계산 (÷208h)</button>
+            <button onclick="saveWageSetting()" style="padding:6px 16px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-size:12px;cursor:pointer;font-weight:500">저장</button>
+            <button onclick="document.getElementById('wage-panel').style.display='none'" style="padding:6px 12px;background:none;border:1px solid #ddd;border-radius:8px;font-size:12px;cursor:pointer;color:#666">닫기</button>
+          </div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px" id="wage-table">
+          <thead><tr style="background:#fafaf8">
+            <th style="text-align:left;padding:8px 10px;font-size:11px;color:#888;border-bottom:1px solid #eee;font-weight:500">직군</th>
+            <th style="text-align:left;padding:8px 10px;font-size:11px;color:#888;border-bottom:1px solid #eee;font-weight:500">기본급 (원/월)</th>
+            <th style="text-align:left;padding:8px 10px;font-size:11px;color:#888;border-bottom:1px solid #eee;font-weight:500">시급 (원)</th>
+          </tr></thead>
+          <tbody id="wage-tbody"></tbody>
+        </table>
+        <!-- 간접비율 설정 -->
+        <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid #f0f0ec;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label style="font-size:11px;color:#888;font-weight:500;display:block;margin-bottom:5px">시간외수당 간접비율 (%)</label>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="rate-indirect" value="11.7264" min="0" max="30" step="0.1"
+                style="width:80px;padding:6px 8px;border:1px solid #ddd;border-radius:7px;font-size:13px">
+              <span style="font-size:11px;color:#aaa">% 적용</span>
+            </div>
+          </div>
+          <div>
+            <label style="font-size:11px;color:#888;font-weight:500;display:block;margin-bottom:5px">퇴직급여충당금률 (%)</label>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input type="number" id="rate-retirement" value="8.33" min="0" max="20" step="0.01"
+                style="width:80px;padding:6px 8px;border:1px solid #ddd;border-radius:7px;font-size:13px">
+              <span style="font-size:11px;color:#aaa">% (시간외수당 × 1/12)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="pay-content"></div>
+    </div>
+
+    <!-- 개인 상세 뷰 (전체 화면 전환) -->
+    <div id="pay-detail-view" style="display:none">
+      <div id="pay-detail-inner"></div>
+    </div>
+
+    <!-- 일별 수정 모달 -->
+    <div id="day-edit-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:16px;padding:1.75rem;width:100%;max-width:400px;margin:1rem;box-shadow:0 8px 40px rgba(0,0,0,0.18)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem">
+          <div>
+            <div style="font-size:17px;font-weight:700" id="dem-date"></div>
+            <div style="font-size:12px;color:#888;margin-top:2px" id="dem-worker"></div>
+          </div>
+          <button onclick="closeDayEditModal()"
+            style="width:30px;height:30px;border-radius:50%;border:1px solid #eee;background:#f5f5f3;cursor:pointer;font-size:16px;color:#888;display:flex;align-items:center;justify-content:center">✕</button>
+        </div>
+
+        <!-- 출퇴근 시간 입력 -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.25rem">
+          <div style="flex:1">
+            <label style="font-size:11px;color:#888;font-weight:500;display:block;margin-bottom:5px">출근 시간</label>
+            <input type="text" id="dem-start" placeholder="09:00" maxlength="5"
+              style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:20px;text-align:center;letter-spacing:3px;font-weight:600"
+              oninput="autoFmtTime(this);previewDayOT()" onfocus="this.select()">
+          </div>
+          <div style="color:#ccc;font-size:24px;margin-top:16px">→</div>
+          <div style="flex:1">
+            <label style="font-size:11px;color:#888;font-weight:500;display:block;margin-bottom:5px">퇴근 시간</label>
+            <input type="text" id="dem-end" placeholder="18:00" maxlength="5"
+              style="width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:10px;font-size:20px;text-align:center;letter-spacing:3px;font-weight:600"
+              oninput="autoFmtTime(this);previewDayOT()" onfocus="this.select()">
+          </div>
+        </div>
+
+        <!-- 익일/휴일 체크 -->
+        <div style="display:flex;gap:10px;margin-bottom:1.25rem">
+          <div style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:#EEEDFE;border-radius:10px;border:1px solid #AFA9EC">
+            <input type="checkbox" id="dem-nextday" style="width:16px;height:16px;accent-color:#534AB7;cursor:pointer"
+              onchange="previewDayOT()">
+            <label for="dem-nextday" style="font-size:13px;font-weight:500;cursor:pointer;color:#534AB7">익일 퇴근</label>
+            <span style="font-size:10px;color:#888;margin-left:auto">20:00~09:00 등</span>
+          </div>
+          <div style="flex:1;display:flex;align-items:center;gap:8px;padding:10px 12px;background:#f8f8f6;border-radius:10px">
+            <input type="checkbox" id="dem-holiday" style="width:16px;height:16px;accent-color:#854F0B;cursor:pointer"
+              onchange="previewDayOT()">
+            <label for="dem-holiday" style="font-size:13px;font-weight:500;cursor:pointer;color:#555">공휴일 / 특근일</label>
+          </div>
+        </div>
+
+        <!-- 실시간 계산 미리보기 -->
+        <div id="dem-preview" style="background:#f5f5f3;border-radius:10px;padding:12px 14px;margin-bottom:1.25rem;min-height:54px">
+          <div style="font-size:11px;color:#aaa;text-align:center">시간 입력 시 자동 계산됩니다</div>
+        </div>
+
+        <!-- 버튼 -->
+        <div style="display:flex;gap:8px">
+          <button onclick="clearDayEditModal()"
+            style="padding:11px 16px;background:none;border:1px solid #eee;border-radius:10px;font-size:13px;cursor:pointer;color:#bbb">
+            초기화
+          </button>
+          <button onclick="closeDayEditModal()"
+            style="padding:11px 16px;background:none;border:1px solid #ddd;border-radius:10px;font-size:13px;cursor:pointer;color:#666;flex:1">
+            취소
+          </button>
+          <button onclick="saveDayEditModal()"
+            style="padding:11px 20px;background:#1a1a1a;color:#fff;border:none;border-radius:10px;font-size:13px;cursor:pointer;font-weight:600;flex:2">
+            저장
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 파견업체 -->
+  <div id="page-agency" class="page">
+    <div class="sec-header">
+      <h2>파견업체 현황</h2>
+      <div class="header-btns">
+        <button class="btn btn-primary" onclick="openAddAgency()">+ 업체 등록</button>
+      </div>
+    </div>
+    <div id="agency-grid"  style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-top:4px"></div>
+  </div>
+</div>
+
+<!-- 신규/수정 모달 -->
+<div class="modal-bg" id="modal" style="display:none">
+  <div class="modal">
+    <h3 id="modal-title">신규 직원 등록</h3>
+
+    <!-- 이력서 자동입력 -->
+    <div class="method-tabs">
+      <button class="m-tab active" onclick="switchUploadMethod('file')">📄 이력서 파일 업로드</button>
+      <button class="m-tab" onclick="switchUploadMethod('text')">📋 텍스트 붙여넣기</button>
+    </div>
+    <div id="up-file">
+      <input type="file" id="resume-input" accept=".pdf,image/*" style="display:none" onchange="handleResume(this)">
+      <div class="upload-zone" id="drop-zone" onclick="document.getElementById('resume-input').click()"
+        ondragover="event.preventDefault();this.classList.add('dragging')"
+        ondragleave="this.classList.remove('dragging')"
+        ondrop="event.preventDefault();this.classList.remove('dragging');handleDrop(event)">
+        <div class="u-icon" id="u-icon">📄</div>
+        <div><div class="u-title" id="u-title">이력서 첨부 → 정보 자동 입력</div>
+        <div class="u-sub">KBS시큐리티 · 모닝인(MI) · 프리머스HR · 자유양식 · PDF · JPG · PNG</div></div>
+      </div>
+    </div>
+    <div id="up-text" style="display:none">
+      <textarea class="paste-area" id="paste-input" placeholder="이력서 내용을 복사해서 붙여넣으세요.&#10;성명, 생년월일, 연락처, 주소, 지원분야 등이 포함되면 자동 인식합니다."></textarea>
+      <button class="btn-parse-text" onclick="parseText()">자동 입력 실행</button>
+    </div>
+    <div class="ai-status" id="ai-status"><div class="spinner"></div><span id="ai-status-text"></span></div>
+    <div class="ai-result" id="ai-result">
+      <div class="ai-result-title">이력서 인식 완료 <span id="fmt-badge" class="fmt-badge fmt-etc" style="font-size:10px"></span></div>
+      <div class="ai-result-grid" id="ai-result-grid"></div>
+    </div>
+
+    <div class="form-grid">
+      <div class="sec-div">기본 정보</div>
+      <div class="fg"><label>관리번호</label><input id="f-code" type="text" placeholder="예) 90012001"></div>
+      <div class="fg"><label>출입증번호</label><input id="f-badge" type="text" placeholder="예) 4898"></div>
+      <div class="fg"><label>성명 <span id="lbl-name"></span></label><input id="f-name" type="text" placeholder="홍길동"></div>
+      <div class="fg"><label>생년월일 <span id="lbl-birth"></span></label><input id="f-birth" type="date"></div>
+      <div class="fg"><label>직군 <span id="lbl-type"></span></label>
+        <select id="f-type" onchange="onModalType('f');autoFillFee('f')">
+          <option value="인제스트">인제스트</option>
+          <option value="촬영보조">촬영보조</option>
+        </select>
+      </div>
+      <div class="fg"><label>등급</label>
+        <select id="f-grade" onchange="autoFillFee('f')"><option value="가">가 등급</option><option value="나">나 등급</option></select>
+      </div>
+      <div class="fg"><label>소속 부서</label>
+        <select id="f-dept">
+          <option value="">자동 (직군 기준)</option>
+          <option value="영상취재1부">영상취재1부</option>
+          <option value="영상취재2부">영상취재2부</option>
+          <option value="뉴스영상콘텐츠부">뉴스영상콘텐츠부</option>
+        </select>
+      </div>
+      <div class="fg"><label>연락처 <span id="lbl-phone"></span></label><input id="f-phone" type="text" placeholder="010-0000-0000"></div>
+      <div class="subtype-box" id="f-subtype-box">
+        <div class="sb-label">촬영보조 세부구분</div>
+        <div class="subtype-btns">
+          <button class="st-btn sel-daily" id="f-st-daily" onclick="selectSub('f','데일리')">데일리</button>
+          <button class="st-btn" id="f-st-special" onclick="selectSub('f','특집')">특집</button>
+          <button class="st-btn" id="f-st-sports" onclick="selectSub('f','스포츠')">스포츠</button>
+        </div>
+        <input type="hidden" id="f-subtype" value="데일리">
+      </div>
+      <div class="fg full"><label>주소 <span id="lbl-addr"></span></label><input id="f-addr" type="text" placeholder="시/도 구/군 상세주소"></div>
+      <div class="sec-div">계약 정보</div>
+      <div class="fg"><label>계약 시작일</label><input id="f-start" type="date"></div>
+      <div class="fg"><label>계약 종료일</label><input id="f-end" type="date"></div>
+      <div class="fg"><label>파견료 (월/원)</label><input id="f-fee" type="number" placeholder="0"></div>
+      <div class="fg"><label>파견업체 <span id="lbl-agency"></span></label><select id="f-agency"><option value="">-- 선택 --</option></select></div>
+      <div class="fg full" style="background:#EEEDFE;border-radius:8px;padding:10px 12px;border:1px solid #C4C0F0">
+        <label style="color:#534AB7;font-weight:600">🔄 등급 변경일 <span style="font-size:10px;font-weight:400;color:#888">(나→가 등급 전환일, 해당 월 일할계산 자동 적용)</span></label>
+        <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+          <input id="f-grade-change-date" type="date" style="flex:1">
+          <button type="button" onclick="document.getElementById('f-grade-change-date').value=''"
+            style="padding:5px 10px;background:none;border:1px solid #C4C0F0;border-radius:6px;font-size:11px;cursor:pointer;color:#888">삭제</button>
+        </div>
+      </div>
+      <div class="fg full"><label>비고 <span id="lbl-note"></span></label><input id="f-note" type="text" placeholder="특이사항, 파견지 등"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">취소</button>
+      <button class="btn-save" onclick="saveWorker()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 교체 모달 -->
+<div class="modal-bg" id="modal-replace" style="display:none">
+  <div class="modal">
+    <h3>직원 교체</h3>
+    <p style="font-size:12px;color:#888;margin-bottom:1rem" id="replace-old-info"></p>
+    <input type="file" id="resume-input-r" accept=".pdf,image/*" style="display:none" onchange="handleResumeR(this)">
+    <div class="upload-zone" onclick="document.getElementById('resume-input-r').click()">
+      <div class="u-icon">📄</div>
+      <div><div class="u-title">신규 투입자 이력서 첨부 → 자동 입력</div><div class="u-sub">KBS시큐리티 · 모닝인 · 프리머스HR · 자유양식</div></div>
+    </div>
+    <div class="ai-status" id="ai-status-r"><div class="spinner"></div><span id="ai-status-text-r"></span></div>
+    <div class="ai-result" id="ai-result-r">
+      <div class="ai-result-title">이력서 인식 완료</div>
+      <div class="ai-result-grid" id="ai-result-grid-r"></div>
+    </div>
+    <div class="form-grid">
+      <div class="sec-div">신규 투입자 정보</div>
+      <div class="fg"><label>관리번호</label><input id="r-code" type="text"></div>
+      <div class="fg"><label>출입증번호</label><input id="r-badge" type="text" placeholder="예) 4898"></div>
+      <div class="fg"><label>성명 <span id="rlbl-name"></span></label><input id="r-name" type="text" placeholder="홍길동"></div>
+      <div class="fg"><label>생년월일 <span id="rlbl-birth"></span></label><input id="r-birth" type="date"></div>
+      <div class="fg"><label>직군 <span id="rlbl-type"></span></label>
+        <select id="r-type" onchange="onModalType('r');autoFillFee('r')"><option value="인제스트">인제스트</option><option value="촬영보조">촬영보조</option></select>
+      </div>
+      <div class="fg"><label>등급</label><select id="r-grade" onchange="autoFillFee('r')"><option value="가">가 등급</option><option value="나">나 등급</option></select></div>
+      <div class="fg"><label>소속 부서</label>
+        <select id="r-dept">
+          <option value="">자동 (직군 기준)</option>
+          <option value="영상취재1부">영상취재1부</option>
+          <option value="영상취재2부">영상취재2부</option>
+          <option value="뉴스영상콘텐츠부">뉴스영상콘텐츠부</option>
+        </select>
+      </div>
+      <div class="fg"><label>연락처 <span id="rlbl-phone"></span></label><input id="r-phone" type="text" placeholder="010-0000-0000"></div>
+      <div class="subtype-box" id="r-subtype-box">
+        <div class="sb-label">촬영보조 세부구분</div>
+        <div class="subtype-btns">
+          <button class="st-btn sel-daily" id="r-st-daily" onclick="selectSub('r','데일리')">데일리</button>
+          <button class="st-btn" id="r-st-special" onclick="selectSub('r','특집')">특집</button>
+          <button class="st-btn" id="r-st-sports" onclick="selectSub('r','스포츠')">스포츠</button>
+        </div>
+        <input type="hidden" id="r-subtype" value="데일리">
+      </div>
+      <div class="fg full"><label>주소 <span id="rlbl-addr"></span></label><input id="r-addr" type="text"></div>
+      <div class="sec-div">계약 정보</div>
+      <div class="fg"><label>계약 시작일</label><input id="r-start" type="date"></div>
+      <div class="fg"><label>계약 종료일</label><input id="r-end" type="date"></div>
+      <div class="fg"><label>파견료 (월/원)</label><input id="r-fee" type="number" placeholder="0"></div>
+      <div class="fg"><label>파견업체 <span id="rlbl-agency"></span></label><select id="r-agency"><option value="">-- 선택 --</option></select></div>
+      <div class="fg full"><label>교체 사유</label><input id="r-reason" type="text" placeholder="계약만료, 자진퇴사 등"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="document.getElementById('modal-replace').style.display='none'">취소</button>
+      <button class="btn-save" onclick="doReplace()">교체 완료</button>
+    </div>
+  </div>
+</div>
+
+<!-- 엑셀 가져오기 모달 -->
+<div class="modal-bg" id="modal-import" style="display:none">
+  <div class="modal" style="max-width:600px">
+    <h3>엑셀 파일 가져오기</h3>
+    <input type="file" id="excel-file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleExcelFile(this)">
+    <div class="excel-drop" id="excel-drop" onclick="document.getElementById('excel-file-input').click()">
+      <div style="font-size:28px;margin-bottom:8px">📊</div>
+      <div style="font-size:13px;font-weight:600;color:#0F6E56">엑셀 파일 클릭하여 선택</div>
+      <div style="font-size:11px;color:#888;margin-top:4px">.xlsx · .xls · .csv · 최대 500행</div>
+    </div>
+    <div id="import-preview" style="display:none">
+      <div class="import-info" id="import-info-text"></div>
+      <p style="font-size:12px;color:#888;margin-bottom:8px">엑셀 열(column)과 시스템 항목을 연결해 주세요</p>
+      <div class="col-map" id="col-map"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeImport()">취소</button>
+      <button class="btn-save" id="import-run-btn" onclick="doImport()" style="display:none">가져오기 실행</button>
+    </div>
+  </div>
+</div>
+
