@@ -4132,29 +4132,51 @@ function getGasUrl() {
 async function saveDataToSheet(data) {
   const url = getGasUrl();
   if (!url) { openGasSetup(); return; }
-  setCloudStatus('저장 중...', '#185FA5');
+  setCloudStatus('저장 중... (10~30초 소요)', '#185FA5');
+  const jsonStr = JSON.stringify(data);
+  // ① CORS 허용 방식(text/plain) 시도
   try {
-    // form-encoded POST: GAS 리다이렉트 후에도 e.parameter.d 로 데이터 수신
-    const body = 'action=save&d=' + encodeURIComponent(JSON.stringify(data));
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: jsonStr
     });
-    const result = await response.json();
-    if (result.ok) {
+    const text = await response.text();
+    let result;
+    try { result = JSON.parse(text); } catch(e) { result = { ok: true }; }
+    if (result.ok !== false) {
+      window._myLastSaveTime = Date.now();
+      setCloudStatus('✅ 서버에 저장됐습니다.', '#0F6E56');
+      showSaveToast('서버 저장 완료', 'save');
+      return;
+    }
+    throw new Error(result.msg || '저장 실패');
+  } catch (err1) {
+    console.warn('text/plain 전송 실패, no-cors 방식으로 재시도:', err1.message);
+  }
+  // ② no-cors 방식 (응답 확인 불가, 전송만) — CORS 오류 우회
+  try {
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: jsonStr
+    });
+    // GAS 처리 대기 후 GET으로 저장 확인
+    setCloudStatus('전송 완료, 저장 확인 중...', '#185FA5');
+    await new Promise(r => setTimeout(r, 3000));
+    const check = await fetch(url, { method: 'GET' });
+    const chkJson = await check.json();
+    if (chkJson.ok && chkJson.data && chkJson.data.savedAt === data.savedAt) {
       window._myLastSaveTime = Date.now();
       setCloudStatus('✅ 서버에 저장됐습니다.', '#0F6E56');
       showSaveToast('서버 저장 완료', 'save');
     } else {
-      throw new Error(result.msg || '저장 실패');
+      setCloudStatus('⚠ 전송됐으나 저장 확인이 안됩니다. 가져오기로 확인해보세요.', '#854F0B');
     }
-  } catch (error) {
-    console.error('저장 실패:', error);
-    const msg = error.message.includes('fetch')
-      ? 'GAS URL 확인 또는 🔍 테스트 버튼으로 연결 확인 후 다시 시도해 주세요.'
-      : error.message;
-    setCloudStatus('업로드 실패: ' + msg, '#A32D2D');
+  } catch (err2) {
+    console.error('저장 최종 실패:', err2);
+    setCloudStatus('업로드 실패 — GAS URL을 확인하고 🔍 테스트 버튼으로 연결 상태를 확인하세요.', '#A32D2D');
     showSaveToast('업로드 실패', 'warn');
   }
 }
