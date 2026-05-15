@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
@@ -766,8 +766,8 @@ select,input,textarea{color-scheme:light}
       </div>
       <div class="fg full"><label>주소 <span id="lbl-addr"></span></label><input id="f-addr" type="text" placeholder="시/도 구/군 상세주소"></div>
       <div class="sec-div">계약 정보</div>
-      <div class="fg"><label>계약 시작일</label><input id="f-start" type="date"></div>
-      <div class="fg"><label>계약 종료일</label><input id="f-end" type="date"></div>
+      <div class="fg"><label>계약 시작일</label><div style="display:flex;gap:4px;align-items:center;"><input id="f-start" type="date"><button type="button" onclick="copyDateVal('f-start')" title="날짜 복사" style="padding:3px 7px;background:#6c63ff;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;flex-shrink:0;">📋</button></div></div>
+      <div class="fg"><label>계약 종료일</label><div style="display:flex;gap:4px;align-items:center;"><input id="f-end" type="date"><button type="button" onclick="copyDateVal('f-end')" title="날짜 복사" style="padding:3px 7px;background:#6c63ff;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:11px;flex-shrink:0;">📋</button></div></div>
       <div class="fg"><label>파견료 (월/원)</label><input id="f-fee" type="number" placeholder="0"></div>
       <div class="fg"><label>파견업체 <span id="lbl-agency"></span></label><select id="f-agency"><option value="">-- 선택 --</option></select></div>
       <div class="fg full" style="background:#EEEDFE;border-radius:8px;padding:10px 12px;border:1px solid #C4C0F0">
@@ -4669,6 +4669,24 @@ function doGet(e) {
   </div>
 </div>
 
+<script>
+function copyDateVal(id) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var val = el.value;
+  if (!val) { alert('날짜가 입력되지 않았습니다.'); return; }
+  navigator.clipboard.writeText(val).then(function() {
+    var btn = el.nextElementSibling;
+    if (btn) { btn.textContent = '✅'; setTimeout(function(){ btn.textContent = '📋'; }, 1200); }
+  }).catch(function() {
+    var ta = document.createElement('textarea');
+    ta.value = val; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    var btn = el.nextElementSibling;
+    if (btn) { btn.textContent = '✅'; setTimeout(function(){ btn.textContent = '📋'; }, 1200); }
+  });
+}
+</script>
 </body>
 </html>
 </body>
