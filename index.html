@@ -4134,7 +4134,27 @@ async function saveDataToSheet(data) {
   if (!url) { openGasSetup(); return; }
   setCloudStatus('저장 중... (10~30초 소요)', '#185FA5');
   const jsonStr = JSON.stringify(data);
-  // ① CORS 허용 방식(text/plain) 시도
+
+  // ① FormData 방식 시도 (GAS e.parameter.d 경로 — 가장 안정적)
+  try {
+    const fd = new FormData();
+    fd.append('d', jsonStr);
+    const response = await fetch(url, { method: 'POST', body: fd });
+    const text = await response.text();
+    let result;
+    try { result = JSON.parse(text); } catch(e) { result = { ok: true }; }
+    if (result.ok !== false) {
+      window._myLastSaveTime = Date.now();
+      setCloudStatus('✅ 서버에 저장됐습니다.', '#0F6E56');
+      showSaveToast('서버 저장 완료', 'save');
+      return;
+    }
+    throw new Error(result.msg || '저장 실패');
+  } catch (err0) {
+    console.warn('FormData 전송 실패, text/plain 방식으로 재시도:', err0.message);
+  }
+
+  // ② text/plain 방식 시도
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -4154,7 +4174,8 @@ async function saveDataToSheet(data) {
   } catch (err1) {
     console.warn('text/plain 전송 실패, no-cors 방식으로 재시도:', err1.message);
   }
-  // ② no-cors 방식 (응답 확인 불가, 전송만) — CORS 오류 우회
+
+  // ③ no-cors 방식 (응답 확인 불가, 전송만) — CORS 오류 우회
   try {
     await fetch(url, {
       method: 'POST',
@@ -4162,17 +4183,17 @@ async function saveDataToSheet(data) {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: jsonStr
     });
-    // GAS 처리 대기 후 GET으로 저장 확인
+    // GAS 처리 대기 후 GET으로 저장 확인 (workers 존재 여부로만 확인)
     setCloudStatus('전송 완료, 저장 확인 중...', '#185FA5');
-    await new Promise(r => setTimeout(r, 3000));
+    await new Promise(r => setTimeout(r, 5000));
     const check = await fetch(url, { method: 'GET' });
     const chkJson = await check.json();
-    if (chkJson.ok && chkJson.data && chkJson.data.savedAt === data.savedAt) {
+    if (chkJson.ok && chkJson.data && Array.isArray(chkJson.data.workers)) {
       window._myLastSaveTime = Date.now();
       setCloudStatus('✅ 서버에 저장됐습니다.', '#0F6E56');
       showSaveToast('서버 저장 완료', 'save');
     } else {
-      setCloudStatus('⚠ 전송됐으나 저장 확인이 안됩니다. 가져오기로 확인해보세요.', '#854F0B');
+      setCloudStatus('⚠ 저장이 안됐습니다. GAS 배포 설정을 확인하세요. (실행계정:나 / 액세스:모든사용자)', '#A32D2D');
     }
   } catch (err2) {
     console.error('저장 최종 실패:', err2);
